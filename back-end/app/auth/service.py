@@ -1,0 +1,76 @@
+import random
+import string
+from typing import Any
+
+from rich import print
+from fastapi import Request, BackgroundTasks
+from pydantic import EmailStr
+from fastapi.encoders import jsonable_encoder
+
+from app.auth.utils import send_email
+from app.auth.models import UserInDB, VerifyInDB, UserInCreate
+from app.core.config import settings
+from app.auth.selectors import get_user_by_email
+
+
+async def create_user(request: Request, user: UserInCreate) -> UserInDB:
+    """Create new user"""
+    user.change_password(user.password)
+    db_user = UserInDB(**user.dict())
+    data = jsonable_encoder(db_user)
+    new_user = await request.app.mongodb.Users.insert_one(data)
+    created_user = await request.app.mongodb.Users.find_one(
+        {"_id": new_user.inserted_id}, {"password": 0}
+    )
+    return created_user
+
+
+async def send_verify_email(
+    email: EmailStr, request: Request, background_tasks: BackgroundTasks
+) -> Any:
+    """Send verification email"""
+    print("sending email ..")
+    user = await get_user_by_email(request, email)
+    full_name = user["first_name"] + user["last_name"]
+    email: EmailStr = user["email"]
+    token = "".join(
+        random.choice(string.ascii_lowercase + string.digits) for _ in range(10)
+    )
+
+    db_verify = VerifyInDB(email=email, token=token)
+    data = jsonable_encoder(db_verify)
+    await request.app.mongodb.Verify.insert_one(data)
+
+    absurl = settings.SERVER_HOST + "api/auth/verify" + "?token=" + str(token)
+    redirect_url = settings.FRONTEND_URL
+
+    email_body = (
+        "<h1> "
+        + "Hi "
+        + str(full_name)
+        + " Use the link below to verify your email"
+        + "</h1> <br>"
+        + "<p>"
+        + absurl
+        + "&redirect_url="
+        + redirect_url
+        + "/login"
+        + "</p>"
+    )
+    email_from = settings.EMAILS_FROM_EMAIL
+    smtp_options = {"host": settings.SMTP_HOST, "port": settings.SMTP_PORT}
+    if settings.SMTP_TLS:
+        smtp_options["tls"] = True
+    if settings.SMTP_USER:
+        smtp_options["user"] = settings.SMTP_USER
+    if settings.SMTP_PASSWORD:
+        smtp_options["password"] = settings.SMTP_PASSWORD
+
+    data = {
+        "email_body": email_body,
+        "to_email": email,
+        "email_subject": "Verify your email",
+        "from": email_from,
+        "smtp": smtp_options,
+    }
+    return background_tasks.add_task(send_email, data)
