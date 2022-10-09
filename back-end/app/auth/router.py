@@ -1,12 +1,18 @@
+import uuid
 from http import HTTPStatus
 from typing import Any
 
 from rich import print  # dev mode
-from fastapi import Body, Request, APIRouter, HTTPException, BackgroundTasks
+from fastapi import Body, Request, Response, APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from app.auth.models import UserInCreate, UserInResponse
-from app.auth.service import create_user, send_verify_email
+from app.auth.models import User, UserBase, UserInLogin, UserInCreate, UserInResponse
+from app.auth.service import (
+    create_user,
+    authenticate,
+    generate_token,
+    send_verify_email,
+)
 from app.auth.selectors import get_verify_email, get_user_by_email
 
 router = APIRouter(prefix="/auth")
@@ -53,6 +59,7 @@ async def verify(request: Request, token: str, redirect_url: str) -> Any:
         )
 
     user = await get_user_by_email(request, verify_email["email"])
+    print(user["email"])
     if not user:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
@@ -60,9 +67,23 @@ async def verify(request: Request, token: str, redirect_url: str) -> Any:
         )
 
     await request.app.mongodb.Users.update_one(
-        {"_id": user["_id"]}, {"$set": {"is_verified": True}}
+        {"email": user["email"]}, {"$set": {"is_verified": True}}
     )
-
-    await request.app.mongodb.Verify.delete_one({"_id": verify_email["_id"]})
-
+    await request.app.mongodb.UserVerify.delete_one({"_id": verify_email["_id"]})
     return redirect_url
+
+
+@router.post("/login", response_model=User, status_code=HTTPStatus.OK)
+async def login(data: UserInLogin, response: Response, request: Request) -> Any:
+    """Login user, token login, get an access token"""
+
+    user = await authenticate(request, email=data.email, password=data.password)
+    if not user:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Incorrect email or password"
+        )
+    elif not user["is_active"]:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Inactive user")
+
+    access_token = await generate_token(user["_id"], request, response)
+    return User(user=user, token=access_token)

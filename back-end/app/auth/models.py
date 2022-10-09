@@ -29,9 +29,6 @@ class UserBase(BaseClass):
     role: UserRole = UserRole.role_client
     auth_provider: AuthProvider = AuthProvider.auth_email
 
-    class Config:
-        allow_population_by_field_name = True
-
 
 class UserInDB(UserBase):
     email: EmailStr
@@ -59,8 +56,19 @@ class UserInCreate(UserInLogin):
         self.password = get_password_hash(password)
 
 
+class UserBaseModel(BaseModel):
+    first_name: Optional[str]
+    last_name: Optional[str]
+    email: EmailStr
+    is_verified: Optional[bool]
+    is_active: Optional[bool]
+    is_superuser: Optional[bool]
+    role: UserRole
+    auth_provider: AuthProvider
+
+
 class UserInResponse(BaseModel):
-    user: UserBase
+    user: UserBaseModel
 
 
 class User(UserInResponse):
@@ -72,7 +80,7 @@ class UserInUpdate(UserBase):
 
 
 class UserTokenInDB(BaseClass):
-    user_id: int
+    user_id: str
     token: str
     expired_at: Optional[datetime]
 
@@ -85,6 +93,3 @@ class ResetInDB(BaseClass):
 class VerifyInDB(BaseClass):
     email: EmailStr
     token: str
-
-    class Config:
-        allow_population_by_field_name = True

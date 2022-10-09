@@ -11,6 +11,7 @@ class BaseClass(BaseModel):
     created_at: Optional[datetime] = Field(alias="createdAt", default=datetime.now())
 
     class Config:
+        allow_population_by_field_name = True
         json_encoders = {
             datetime: lambda v: v.timestamp(),
             timedelta: timedelta_isoformat,

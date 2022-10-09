@@ -1,10 +1,4 @@
-import random
-import string
-from typing import Any
-
 import emails
-from fastapi import Request, BackgroundTasks
-from pydantic import EmailStr
 from passlib.context import CryptContext
 
 from app.core.config import settings
