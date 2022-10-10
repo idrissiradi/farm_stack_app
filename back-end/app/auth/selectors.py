@@ -4,7 +4,7 @@ from rich import print
 from fastapi import Request
 from pydantic import EmailStr
 
-from app.auth.models import VerifyInDB, UserInResponse
+from app.auth.models import VerifyInDB, UserTokenInDB, UserInResponse
 
 
 async def get_user(request: Request, email: EmailStr) -> Optional[UserInResponse]:
@@ -25,3 +25,9 @@ async def get_verify_email(request: Request, token: str) -> Optional[VerifyInDB]
     """Get verify email by token"""
     verify = await request.app.mongodb.UserVerify.find_one({"token": token})
     return verify
+
+
+async def get_user_token(request: Request, token: str) -> Optional[UserTokenInDB]:
+    """Get user token"""
+    token = await request.app.mongodb.UserToken.find_one({"token": token})
+    return token

@@ -13,7 +13,7 @@ from app.auth.service import (
     generate_token,
     send_verify_email,
 )
-from app.auth.selectors import get_verify_email, get_user_by_email
+from app.auth.selectors import get_user_token, get_verify_email, get_user_by_email
 
 router = APIRouter(prefix="/auth")
 
@@ -49,7 +49,7 @@ async def register(
 
 @router.get("/verify", response_class=RedirectResponse, status_code=HTTPStatus.OK)
 async def verify(request: Request, token: str, redirect_url: str) -> Any:
-    """Verify email"""
+    """Verify user email"""
 
     verify_email = await get_verify_email(request, token)
     if not verify_email:
@@ -87,3 +87,22 @@ async def login(data: UserInLogin, response: Response, request: Request) -> Any:
 
     access_token = await generate_token(user["_id"], request, response)
     return User(user=user, token=access_token)
+
+
+@router.post("/logout")
+async def logout(request: Request, response: Response) -> Any:
+    """Log out authenticated user"""
+
+    refresh_token = request.cookies.get("refresh_token")
+    token = await get_user_token(refresh_token)
+    print("refresh token : ", refresh_token)
+    print("token : ", token)
+    print("token id : ", token["_id"])
+
+    if not token:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, "Invalide credentials")
+
+    await request.app.mongodb.UserToken.delete_one({"_id": token["_id"]})
+    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="refresh_token")
+    return {"message": "success"}
