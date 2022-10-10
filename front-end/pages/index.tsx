@@ -1,5 +1,6 @@
 import type { NextPage } from 'next';
 import Head from 'next/head';
+import SwitchTheme from '../components/partials/SwitchTheme';
 
 const Home: NextPage = () => {
 	return (
@@ -14,9 +15,13 @@ const Home: NextPage = () => {
 			</Head>
 
 			<main>
-				<h1 className=' text-center'>
+				<h1>
 					Welcome to <a href='https://nextjs.org'>Next.js!</a>
 				</h1>
+				<p>
+					Get started by editing <code>pages/index.tsx</code>
+				</p>
+				<SwitchTheme />
 			</main>
 		</div>
 	);

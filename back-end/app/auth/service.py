@@ -153,7 +153,7 @@ async def send_reset_password(
     data = jsonable_encoder(reset)
     await request.app.mongodb.UserReset.insert_one(data)
 
-    url = settings.FRONTEND_URL + "/reset/" + "?token=" + str(token)
+    url = settings.FRONTEND_URL + "/reset" + "?token=" + str(token)
     email_body = (
         "<h1> "
         + "Hi "
