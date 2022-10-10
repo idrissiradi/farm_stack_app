@@ -90,6 +90,12 @@ class ResetInDB(BaseClass):
     token: str
 
 
+class ResetSchema(BaseModel):
+    password: str
+    password_confirm: str
+    token: str
+
+
 class VerifyInDB(BaseClass):
     email: EmailStr
     token: str

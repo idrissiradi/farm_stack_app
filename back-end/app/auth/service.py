@@ -11,6 +11,7 @@ from fastapi.encoders import jsonable_encoder
 from app.auth.utils import send_email, verify_password
 from app.auth.models import (
     UserInDB,
+    ResetInDB,
     VerifyInDB,
     UserInCreate,
     UserTokenInDB,
@@ -136,3 +137,47 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
         + datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
     )
     return access_token
+
+
+async def send_reset_password(
+    email: str, background_tasks: BackgroundTasks, request: Request
+):
+    """Send reset password email"""
+
+    user = await get_user_by_email(request, email)
+    full_name = user["first_name"] + " " + user["last_name"]
+    token = "".join(
+        random.choice(string.ascii_lowercase + string.digits) for _ in range(10)
+    )
+    reset = ResetInDB(email=user["email"], token=token)
+    data = jsonable_encoder(reset)
+    await request.app.mongodb.UserReset.insert_one(data)
+
+    url = settings.FRONTEND_URL + "/reset/" + "?token=" + str(token)
+    email_body = (
+        "<h1> "
+        + "Hi "
+        + str(full_name)
+        + " Use the link below to reset your password"
+        + "</h1> <br>"
+        + "<p>"
+        + url
+        + "</p>"
+    )
+    email_from = settings.EMAILS_FROM_EMAIL
+    smtp_options = {"host": settings.SMTP_HOST, "port": settings.SMTP_PORT}
+    if settings.SMTP_TLS:
+        smtp_options["tls"] = True
+    if settings.SMTP_USER:
+        smtp_options["user"] = settings.SMTP_USER
+    if settings.SMTP_PASSWORD:
+        smtp_options["password"] = settings.SMTP_PASSWORD
+
+    data = {
+        "email_body": email_body,
+        "to_email": email,
+        "email_subject": "Reset your password",
+        "from": email_from,
+        "smtp": smtp_options,
+    }
+    return background_tasks.add_task(send_email, data)

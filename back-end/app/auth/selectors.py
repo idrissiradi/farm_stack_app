@@ -4,7 +4,7 @@ from rich import print
 from fastapi import Request
 from pydantic import EmailStr
 
-from app.auth.models import VerifyInDB, UserTokenInDB, UserInResponse
+from app.auth.models import ResetInDB, VerifyInDB, UserTokenInDB, UserInResponse
 
 
 async def get_user(request: Request, email: EmailStr) -> Optional[UserInResponse]:
@@ -31,3 +31,9 @@ async def get_user_token(request: Request, token: str) -> Optional[UserTokenInDB
     """Get user token"""
     token = await request.app.mongodb.UserToken.find_one({"token": token})
     return token
+
+
+async def get_user_reset(request: Request, token: str) -> Optional[ResetInDB]:
+    """Get user reset"""
+    user_reset = await request.app.mongodb.UserReset.find_one({"token": token})
+    return user_reset

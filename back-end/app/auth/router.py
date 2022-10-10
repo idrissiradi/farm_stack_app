@@ -6,14 +6,29 @@ from rich import print  # dev mode
 from fastapi import Body, Request, Response, APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from app.auth.models import User, UserBase, UserInLogin, UserInCreate, UserInResponse
+from app.auth.utils import get_password_hash
+from app.auth.models import (
+    User,
+    UserBase,
+    ResetInDB,
+    ResetSchema,
+    UserInLogin,
+    UserInCreate,
+    UserInResponse,
+)
 from app.auth.service import (
     create_user,
     authenticate,
     generate_token,
     send_verify_email,
+    send_reset_password,
 )
-from app.auth.selectors import get_user_token, get_verify_email, get_user_by_email
+from app.auth.selectors import (
+    get_user_reset,
+    get_user_token,
+    get_verify_email,
+    get_user_by_email,
+)
 
 router = APIRouter(prefix="/auth")
 
@@ -89,7 +104,7 @@ async def login(data: UserInLogin, response: Response, request: Request) -> Any:
     return User(user=user, token=access_token)
 
 
-@router.post("/logout")
+@router.post("/logout", status_code=HTTPStatus.OK)
 async def logout(request: Request, response: Response) -> Any:
     """Log out authenticated user"""
 
@@ -106,3 +121,46 @@ async def logout(request: Request, response: Response) -> Any:
     response.delete_cookie(key="access_token")
     response.delete_cookie(key="refresh_token")
     return {"message": "success"}
+
+
+@router.post("/recover_password", status_code=HTTPStatus.OK)
+async def recover_password(
+    request: Request, email: str, background_tasks: BackgroundTasks
+) -> Any:
+    """Forget password"""
+
+    user = await get_user_by_email(email=email, request=request)
+    if not user:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="The user with this username does not exist in the system.",
+        )
+    await send_reset_password(user["email"], background_tasks, request)
+    return {"message": "Password recovery email sent"}
+
+
+@router.post("/reset", status_code=HTTPStatus.OK)
+async def reset_password(request: Request, data: ResetSchema) -> Any:
+    """Reset password"""
+
+    if data.password != data.password_confirm:
+        raise HTTPException(HTTPStatus.UNAUTHORIZED, "Password do not match")
+
+    user_reset = await get_user_reset(request, data.token)
+    if not user_reset:
+        raise HTTPException(HTTPStatus.NOT_FOUND, "Invalid Link")
+
+    user = await get_user_by_email(request, user_reset["email"])
+    if not user:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="The user with this username does not exist in the system.",
+        )
+
+    hashed_password = get_password_hash(data.password)
+    await request.app.mongodb.Users.update_one(
+        {"_id": user["_id"]}, {"$set": {"password": hashed_password}}
+    )
+    await request.app.mongodb.UserReset.delete_one({"token": data.token})
+
+    return {"message": "Password updated successfully"}
