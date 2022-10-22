@@ -1,21 +1,12 @@
-import uuid
 from http import HTTPStatus
 from typing import Any
 
-from rich import print  # dev mode
+# from rich import print  # dev mode
 from fastapi import Body, Request, Response, APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.auth.utils import get_password_hash
-from app.auth.models import (
-    User,
-    UserBase,
-    ResetInDB,
-    ResetSchema,
-    UserInLogin,
-    UserInCreate,
-    UserInResponse,
-)
+from app.auth.models import User, ResetSchema, UserInLogin, UserInCreate, UserInResponse
 from app.auth.service import (
     create_user,
     authenticate,
@@ -74,7 +65,6 @@ async def verify(request: Request, token: str, redirect_url: str) -> Any:
         )
 
     user = await get_user_by_email(request, verify_email["email"])
-    print(user["email"])
     if not user:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
@@ -110,10 +100,6 @@ async def logout(request: Request, response: Response) -> Any:
 
     refresh_token = request.cookies.get("refresh_token")
     token = await get_user_token(refresh_token)
-    print("refresh token : ", refresh_token)
-    print("token : ", token)
-    print("token id : ", token["_id"])
-
     if not token:
         raise HTTPException(HTTPStatus.BAD_REQUEST, "Invalide credentials")
 

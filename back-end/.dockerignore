@@ -1,0 +1,11 @@
+.env
+.env.example
+.git*
+README.rst
+LICENSE
+__pycache__
+.dockerignore
+.vscode/
+logfile.log
+setup.cfg
+.hypothesis/

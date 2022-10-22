@@ -3,7 +3,7 @@ import string
 import datetime
 from typing import Any, Optional
 
-from rich import print
+# from rich import print
 from fastapi import Request, Response, BackgroundTasks
 from pydantic import EmailStr
 from fastapi.encoders import jsonable_encoder

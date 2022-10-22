@@ -97,6 +97,3 @@ def decode_refresh_token(token):
             status_code=HTTPStatus.UNAUTHORIZED,
             detail="Could not validate credentials",
         )
-
-
-token_auth = JWTBearer()
