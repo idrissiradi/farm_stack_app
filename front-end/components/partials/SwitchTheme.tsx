@@ -1,21 +1,23 @@
 import React, { useEffect } from 'react';
 import { FiMoon, FiSun } from 'react-icons/fi';
 import { useLocalStorage } from 'usehooks-ts';
+
 const SwitchTheme = () => {
-	const [theme, setTheme] = useLocalStorage('theme', 'black');
+	const [isDarkTheme, setDarkTheme] = useLocalStorage('darkTheme', false);
 
 	const toggleTheme = () => {
-		setTheme(theme === 'black' ? 'lofi' : 'black');
+		setDarkTheme((prevValue: boolean) => !prevValue);
 	};
 
 	useEffect(() => {
 		const body = document.body;
+		const theme = isDarkTheme ? 'black' : 'lofi';
 		body.setAttribute('data-theme', theme);
-	}, [theme]);
+	}, [isDarkTheme]);
 
 	return (
 		<button className='btn btn-circle' onClick={toggleTheme}>
-			{theme === 'black' ? (
+			{isDarkTheme === false ? (
 				<FiMoon className='w-5 h-5' />
 			) : (
 				<FiSun className='w-5 h-5' />

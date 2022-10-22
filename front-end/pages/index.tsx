@@ -1,8 +1,17 @@
-import type { NextPage } from 'next';
+import dynamic from 'next/dynamic';
 import Head from 'next/head';
-import SwitchTheme from '../components/partials/SwitchTheme';
+import { ReactElement } from 'react';
+import Layout from '../components/Layout';
+import { NextPageWithLayout } from './_app';
 
-const Home: NextPage = () => {
+const SwitchTheme = dynamic(
+	() => import('../components/partials/SwitchTheme'),
+	{
+		ssr: false,
+	},
+);
+
+const Home: NextPageWithLayout = () => {
 	return (
 		<div>
 			<Head>
@@ -25,6 +34,10 @@ const Home: NextPage = () => {
 			</main>
 		</div>
 	);
+};
+
+Home.getLayout = function getLayout(page: ReactElement) {
+	return <Layout>{page}</Layout>;
 };
 
 export default Home;

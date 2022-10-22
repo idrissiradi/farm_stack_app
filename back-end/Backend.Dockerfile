@@ -20,7 +20,7 @@ WORKDIR $APP_HOME
 COPY requirements.txt /
 RUN pip install -r /requirements.txt --no-cache-dir 
 
-# Copy in the Flask code
+# Copy 
 COPY . $APP_HOME
 
 # Chown all the files to the app user
