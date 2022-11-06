@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
 	content: [
+		'./app/**/*.{js,ts,jsx,tsx}',
 		'./pages/**/*.{js,ts,jsx,tsx}',
 		'./components/**/*.{js,ts,jsx,tsx}',
 	],
@@ -9,17 +10,7 @@ module.exports = {
 	},
 	plugins: [
 		require('@tailwindcss/forms'),
-		require('@tailwindcss/typography'),
 		require('@tailwindcss/aspect-ratio'),
-		require('daisyui'),
+		require('@tailwindcss/typography'),
 	],
-	daisyui: {
-		themes: ['lofi', 'black'],
-		styled: true,
-		base: true,
-		utils: true,
-		logs: true,
-		rtl: false,
-		prefix: '',
-	},
 };
