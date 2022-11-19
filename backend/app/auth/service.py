@@ -67,7 +67,7 @@ async def send_verify_email(
         + absurl
         + "&redirect_url="
         + redirect_url
-        + "/login"
+        + "account/login"
         + "</p>"
     )
     email_from = settings.EMAILS_FROM_EMAIL

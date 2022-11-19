@@ -21,6 +21,12 @@ async def get_user_by_email(
     return user
 
 
+async def get_user_by_id(request: Request, id: str) -> Optional[UserInResponse]:
+    """Get user by id"""
+    user = await request.app.mongodb.Users.find_one({"_id": id}, {"password": 0})
+    return user
+
+
 async def get_verify_email(request: Request, token: str) -> Optional[VerifyInDB]:
     """Get verify email by token"""
     verify = await request.app.mongodb.UserVerify.find_one({"token": token})

@@ -14,7 +14,9 @@ from app.auth.service import (
     send_verify_email,
     send_reset_password,
 )
+from app.core.security import decode_access_token
 from app.auth.selectors import (
+    get_user_by_id,
     get_user_reset,
     get_user_token,
     get_verify_email,
@@ -150,3 +152,20 @@ async def reset_password(request: Request, data: ResetSchema) -> Any:
     await request.app.mongodb.UserReset.delete_one({"token": data.token})
 
     return {"message": "Password updated successfully"}
+
+
+@router.get("/profile", status_code=HTTPStatus.OK, response_model=UserInResponse)
+async def get_user(request: Request) -> Any:
+    """Get current user"""
+
+    access_token = request.cookies.get("access_token")
+
+    if access_token:
+        user_id = decode_access_token(access_token)
+        user = await get_user_by_id(request, user_id)
+        return UserInResponse(user=user)
+
+    raise HTTPException(
+        status_code=HTTPStatus.NOT_FOUND,
+        detail="The user with this username does not exist in the system.",
+    )
