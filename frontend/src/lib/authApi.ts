@@ -46,8 +46,8 @@ authApi.interceptors.response.use(
 );
 
 export const refreshAccessTokenFn = async () => {
-	const response = await authApi.post<UserResponse>('/auth/refresh');
-	localStorage.setItem('token', response.data.token);
+	const response = await authApi.post<string>('/auth/refresh');
+	localStorage.setItem('token', response.data);
 	return response.data;
 };
 

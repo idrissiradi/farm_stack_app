@@ -13,6 +13,7 @@ from app.auth.service import (
     generate_token,
     send_verify_email,
     send_reset_password,
+    generate_access_token,
 )
 from app.core.security import decode_access_token
 from app.auth.selectors import (
@@ -94,6 +95,17 @@ async def login(data: UserInLogin, response: Response, request: Request) -> Any:
 
     access_token = await generate_token(user["_id"], request, response)
     return User(user=user, token=access_token)
+
+
+@router.post("/refresh", status_code=HTTPStatus.OK)
+def refresh_token(
+    request: Request,
+    response: Response,
+) -> Any:
+    """Refresh token API"""
+
+    token = generate_access_token(request, response)
+    return token
 
 
 @router.post("/logout", status_code=HTTPStatus.OK)

@@ -4,7 +4,7 @@ import datetime
 from typing import Any, Optional
 
 # from rich import print
-from fastapi import Request, Response, BackgroundTasks
+from fastapi import Request, Response, HTTPException, BackgroundTasks
 from pydantic import EmailStr
 from fastapi.encoders import jsonable_encoder
 
@@ -23,7 +23,7 @@ from app.core.security import (
     create_refresh_token,
     decode_refresh_token,
 )
-from app.auth.selectors import get_user, get_user_by_email
+from app.auth.selectors import get_user, get_user_by_id, get_user_by_email
 
 
 async def create_user(request: Request, user: UserInCreate) -> Optional[UserInResponse]:
@@ -137,6 +137,32 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
         expires=datetime.datetime.utcnow()
         + datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
     )
+    return access_token
+
+
+async def generate_access_token(request: Request, response: Response) -> str:
+    """Generate Access token"""
+
+    refresh_token = request.cookies.get("refresh_token")
+    user_id = decode_refresh_token(refresh_token)
+    user_token = await request.app.mongodb.UserToken.find_one({"user_id": user_id})
+
+    if not user_token:
+        raise HTTPException(403, "unauthenticated")
+
+    user = await get_user_by_id(request, user_id)
+    access_token = create_access_token(user["_id"])
+
+    response.set_cookie(
+        "access_token",
+        access_token,
+        httponly=True,
+        samesite="none",
+        secure=True,
+        expires=datetime.datetime.utcnow()
+        + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+
     return access_token
 
 
