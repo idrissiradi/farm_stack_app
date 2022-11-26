@@ -55,7 +55,7 @@ async def register(
     )
 
 
-@router.get("/verify", response_class=RedirectResponse, status_code=HTTPStatus.OK)
+@router.get("/verify", status_code=HTTPStatus.SEE_OTHER)
 async def verify(request: Request, token: str, redirect_url: str) -> Any:
     """Verify user email"""
 
@@ -77,7 +77,7 @@ async def verify(request: Request, token: str, redirect_url: str) -> Any:
         {"email": user["email"]}, {"$set": {"is_verified": True}}
     )
     await request.app.mongodb.UserVerify.delete_one({"_id": verify_email["_id"]})
-    return redirect_url
+    return RedirectResponse(redirect_url)
 
 
 @router.post("/login", response_model=User, status_code=HTTPStatus.OK)
@@ -159,7 +159,6 @@ async def get_user(request: Request) -> Any:
     """Get current user"""
 
     access_token = request.cookies.get("access_token")
-
     if access_token:
         user_id = decode_access_token(access_token)
         user = await get_user_by_id(request, user_id)

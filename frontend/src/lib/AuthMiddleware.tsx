@@ -22,6 +22,10 @@ const AuthMiddleware = ({ children }: { children: React.ReactNode }) => {
 		return <h1>Loading</h1>;
 	}
 
+	if (query.isError) {
+		localStorage.removeItem('token');
+	}
+
 	return <div>{children}</div>;
 };
 

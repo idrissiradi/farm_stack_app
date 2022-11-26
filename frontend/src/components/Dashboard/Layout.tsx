@@ -11,7 +11,7 @@ const DashboardLayout = () => {
 	const data = stateContext.state.user;
 
 	useEffect(() => {
-		if (data?.user.role === 'client') {
+		if (!data?.user || data?.user.role === 'client') {
 			navigate('/account');
 		}
 	}, [navigate, data?.user.role, data]);

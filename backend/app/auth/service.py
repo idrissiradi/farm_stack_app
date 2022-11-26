@@ -67,7 +67,7 @@ async def send_verify_email(
         + absurl
         + "&redirect_url="
         + redirect_url
-        + "account/login"
+        + "/login"
         + "</p>"
     )
     email_from = settings.EMAILS_FROM_EMAIL
@@ -115,6 +115,7 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
         + datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
     )
     data = jsonable_encoder(user_token)
+    await request.app.mongodb.UserToken.delete_one({"_id": id})
     await request.app.mongodb.UserToken.insert_one(data)
 
     response.set_cookie(
@@ -151,6 +152,7 @@ async def send_reset_password(
     )
     reset = ResetInDB(email=user["email"], token=token)
     data = jsonable_encoder(reset)
+    await request.app.mongodb.UserReset.delete_one({"email": user["email"]})
     await request.app.mongodb.UserReset.insert_one(data)
 
     url = settings.FRONTEND_URL + "/reset" + "?token=" + str(token)

@@ -12,13 +12,13 @@ load_dotenv(".env")
 class Settings(BaseSettings):
     API_STR: str = "/api"
     PROJECT_NAME: str = "example_application"
-    FRONTEND_URL: str = "localhost:3000"
+    FRONTEND_URL: str = "localhost:5173"
     SERVER_HOST: str = "http://localhost:8000/"
 
     # JWT token
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # one day
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # one week
-    SECRET_KEY: str = "secrets.token_urlsafe(32)"
+    SECRET_KEY: str = secrets.token_urlsafe(32)
     JWT_ALGORITHM: str = "HS256"
 
     # BACKEND CORS ORIGINS

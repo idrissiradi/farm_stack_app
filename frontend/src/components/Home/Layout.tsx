@@ -4,11 +4,23 @@ const Layout = () => {
 	return (
 		<div>
 			<h1>layout</h1>
-			<Link to='/'>home</Link>
-			<Link to='/account'>account</Link>
-			<Link to='/login'>login</Link>
-			<Link to='/register'>register</Link>
-			<Link to='/dashboard'>dashboard</Link>
+			<ul>
+				<li>
+					<Link to='/'>home</Link>
+				</li>
+				<li>
+					<Link to='/account'>account</Link>
+				</li>
+				<li>
+					<Link to='/login'>login</Link>
+				</li>
+				<li>
+					<Link to='/register'>register</Link>
+				</li>
+				<li>
+					<Link to='/dashboard'>dashboard</Link>
+				</li>
+			</ul>
 			<Outlet />
 		</div>
 	);

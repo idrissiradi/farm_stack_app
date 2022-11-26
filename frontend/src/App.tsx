@@ -11,6 +11,7 @@ import Register from './components/Account/Register';
 import Account from './components/Account';
 import { StateContextProvider } from './context';
 import AuthMiddleware from './lib/AuthMiddleware';
+import ResetPassword from './components/Account/ResetPassword';
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
 			{
 				path: 'register',
 				element: <Register />,
+			},
+			{
+				path: 'reset-password',
+				element: <ResetPassword />,
 			},
 		],
 	},

@@ -73,3 +73,10 @@ export const getUserFn = async () => {
 	const response = await authApi.get<UserProfile>('/auth/profile');
 	return response.data;
 };
+
+export const ResetPasswordFn = async (email: string) => {
+	const response = await authApi.post(
+		`/auth/recover_password?email=${email}`,
+	);
+	return response.data;
+};
