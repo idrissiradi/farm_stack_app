@@ -5,6 +5,7 @@ import {
 	UserResponse,
 	LoginRequest,
 	UserProfile,
+	ResetPasswordRequest,
 } from './types/userTypes';
 
 // const { NEXT_URL } = process.env;
@@ -74,9 +75,14 @@ export const getUserFn = async () => {
 	return response.data;
 };
 
-export const ResetPasswordFn = async (email: string) => {
+export const RecoverPasswordFn = async (email: string) => {
 	const response = await authApi.post(
 		`/auth/recover_password?email=${email}`,
 	);
+	return response.data;
+};
+
+export const ResetPasswordFn = async (data: ResetPasswordRequest) => {
+	const response = await authApi.post('/auth/reset', data);
 	return response.data;
 };

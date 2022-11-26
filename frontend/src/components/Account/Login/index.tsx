@@ -24,7 +24,7 @@ const Login = () => {
 			<h1>Login</h1>
 			<Form />
 			<h2>
-				Forget password? <Link to='/reset-password'>Click Here</Link>{' '}
+				Forget password? <Link to='/recover-password'>Click Here</Link>
 			</h2>
 		</div>
 	);
