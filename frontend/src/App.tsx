@@ -10,7 +10,7 @@ import Login from './components/Account/Login';
 import Register from './components/Account/Register';
 import Account from './components/Account';
 import { StateContextProvider } from './context';
-import AuthMiddleware from './lib/AuthMiddleware';
+import AuthMiddleware from './lib/middleware/AuthMiddleware';
 import RecoverPassword from './components/Account/RecoverPassword';
 import ResetPassword from './components/Account/ResetPassword';
 

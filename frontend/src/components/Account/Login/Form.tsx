@@ -7,7 +7,6 @@ import { LoginRequest } from '../../../lib/types/userTypes';
 import { useStateContext } from '../../../context';
 
 const Form = () => {
-	const navigate = useNavigate();
 	const stateContext = useStateContext();
 
 	const [formData, setFormData] = useState({ email: '', password: '' });
@@ -28,8 +27,6 @@ const Form = () => {
 		onSuccess: (data) => {
 			const userData = {
 				user: data,
-				token: null,
-				tfa: null,
 			};
 			stateContext.dispatch({ type: 'SET_USER', payload: userData });
 		},
@@ -40,10 +37,12 @@ const Form = () => {
 
 		{
 			onSuccess: () => {
-				query.refetch();
+				query.refetch({ throwOnError: true });
+				if (query.isFetched) {
+					console.log('first');
+				}
 				console.log('You successfully logged in');
 				setFormData({ email: '', password: '' });
-				navigate('/');
 			},
 			onError: () => {
 				console.log('You not logged in');

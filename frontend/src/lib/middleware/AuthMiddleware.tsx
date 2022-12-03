@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { getUserFn } from './authApi';
-import { useStateContext } from '../context';
+import { getUserFn } from '../authApi';
+import { useStateContext } from '../../context';
 
 const AuthMiddleware = ({ children }: { children: React.ReactNode }) => {
 	const stateContext = useStateContext();
