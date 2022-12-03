@@ -1,4 +1,5 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import { Link } from '../ui/Link';
 
 const Layout = () => {
 	return (
@@ -6,19 +7,19 @@ const Layout = () => {
 			<h1>layout</h1>
 			<ul>
 				<li>
-					<Link to='/'>home</Link>
+					<Link href='/'>home</Link>
 				</li>
 				<li>
-					<Link to='/account'>account</Link>
+					<Link href='/account'>account</Link>
 				</li>
 				<li>
-					<Link to='/login'>login</Link>
+					<Link href='/login'>login</Link>
 				</li>
 				<li>
-					<Link to='/register'>register</Link>
+					<Link href='/register'>register</Link>
 				</li>
 				<li>
-					<Link to='/dashboard'>dashboard</Link>
+					<Link href='/dashboard'>dashboard</Link>
 				</li>
 			</ul>
 			<Outlet />

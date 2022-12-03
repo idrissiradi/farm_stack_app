@@ -1,7 +1,19 @@
-import React, { ComponentProps } from 'react';
+import { ComponentProps } from 'react';
+import { Link } from 'react-router-dom';
 
-const ButtonOrLink = () => {
-	return <div>ButtonOrLink</div>;
-};
+type ButtonOrLinkProps = ComponentProps<'button'> & ComponentProps<'a'>;
 
-export default ButtonOrLink;
+export interface Props extends ButtonOrLinkProps {}
+
+export function ButtonOrLink({ href, ...props }: Props) {
+	const isLink = typeof href !== 'undefined';
+	const ButtonOrLink = isLink ? 'a' : 'button';
+
+	let content = <ButtonOrLink {...props} />;
+
+	if (isLink) {
+		return <Link to={href}>{content}</Link>;
+	}
+
+	return content;
+}

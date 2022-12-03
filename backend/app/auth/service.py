@@ -115,7 +115,7 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
         + datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
     )
     data = jsonable_encoder(user_token)
-    await request.app.mongodb.UserToken.delete_one({"_id": id})
+    await request.app.mongodb.UserToken.delete_one({"user_id": id})
     await request.app.mongodb.UserToken.insert_one(data)
 
     response.set_cookie(
@@ -124,6 +124,8 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
         httponly=True,
         samesite="none",
         secure=True,
+        max_age=datetime.datetime.utcnow()
+        + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         expires=datetime.datetime.utcnow()
         + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
@@ -134,10 +136,15 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
         httponly=True,
         samesite="none",
         secure=True,
+        max_age=datetime.datetime.utcnow()
+        + datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
         expires=datetime.datetime.utcnow()
         + datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
     )
-    return access_token
+    token = "".join(
+        random.choice(string.ascii_lowercase + string.digits) for _ in range(20)
+    )
+    return token
 
 
 async def generate_access_token(request: Request, response: Response) -> str:
@@ -162,8 +169,10 @@ async def generate_access_token(request: Request, response: Response) -> str:
         expires=datetime.datetime.utcnow()
         + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-
-    return access_token
+    token = "".join(
+        random.choice(string.ascii_lowercase + string.digits) for _ in range(20)
+    )
+    return token
 
 
 async def send_reset_password(

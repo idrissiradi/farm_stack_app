@@ -1,3 +1,5 @@
+import random
+import string
 from http import HTTPStatus
 from typing import Any
 
@@ -93,18 +95,18 @@ async def login(data: UserInLogin, response: Response, request: Request) -> Any:
     elif not user["is_active"]:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Inactive user")
 
-    access_token = await generate_token(user["_id"], request, response)
-    return User(user=user, token=access_token)
+    token = await generate_token(user["_id"], request, response)
+    return User(user=user, token=token)
 
 
 @router.post("/refresh", status_code=HTTPStatus.OK)
-def refresh_token(
+async def refresh_token(
     request: Request,
     response: Response,
 ) -> Any:
     """Refresh token API"""
 
-    token = generate_access_token(request, response)
+    token = await generate_access_token(request, response)
     return token
 
 

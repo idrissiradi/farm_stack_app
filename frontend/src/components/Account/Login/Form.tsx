@@ -38,9 +38,6 @@ const Form = () => {
 		{
 			onSuccess: () => {
 				query.refetch({ throwOnError: true });
-				if (query.isFetched) {
-					console.log('first');
-				}
 				console.log('You successfully logged in');
 				setFormData({ email: '', password: '' });
 			},

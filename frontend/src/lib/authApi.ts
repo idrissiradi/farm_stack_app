@@ -19,16 +19,6 @@ const authApi = axios.create({
 	},
 });
 
-authApi.interceptors.request.use((config) => {
-	const token = localStorage.getItem('token');
-
-	if (token) {
-		config.headers!.Authorization = `Bearer ${token}`;
-	}
-
-	return config;
-});
-
 authApi.interceptors.response.use(
 	(response) => {
 		return response;
@@ -67,6 +57,7 @@ export const loginUserFn = async (user: LoginRequest) => {
 
 export const logoutUserFn = async () => {
 	const response = await authApi.post('/auth/logout');
+	localStorage.removeItem('token');
 	return response.data;
 };
 
