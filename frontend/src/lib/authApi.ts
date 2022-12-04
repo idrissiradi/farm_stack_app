@@ -24,21 +24,26 @@ authApi.interceptors.response.use(
 		return response;
 	},
 	async (error) => {
-		const originalRequest = error.config;
-		const errMessage = error.response.data.message as string;
-		if (errMessage.includes('not logged in') && !originalRequest._retry) {
-			originalRequest._retry = true;
-			await refreshAccessTokenFn();
-			return authApi(originalRequest);
+		if (error.response.status !== 401) {
+			const originalRequest = error.config;
+			if (error && !originalRequest._retry) {
+				originalRequest._retry = true;
+				await refreshAccessTokenFn();
+				return authApi(originalRequest);
+			}
+			return Promise.reject(error.message);
 		}
-		return Promise.reject(error);
+		throw new Error(`Error message : ${error.message} - `, error.code);
 	},
 );
 
 export const refreshAccessTokenFn = async () => {
 	const response = await authApi.post<string>('/auth/refresh');
-	localStorage.setItem('token', response.data);
-	return response.data;
+	if (response.status === 200) {
+		localStorage.setItem('token', response.data);
+		return response.data;
+	}
+	throw new Error(`HTTP error ${response.status}`);
 };
 
 export const registerUserFn = async (user: RegisterRequest) => {

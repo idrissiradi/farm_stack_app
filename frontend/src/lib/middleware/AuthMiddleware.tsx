@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { getUserFn, refreshAccessTokenFn } from '../authApi';
+import { useQuery } from '@tanstack/react-query';
+import { getUserFn } from '../authApi';
 import { useStateContext } from '../../context';
 
 const AuthMiddleware = ({ children }: { children: React.ReactNode }) => {
@@ -8,7 +8,7 @@ const AuthMiddleware = ({ children }: { children: React.ReactNode }) => {
 
 	const query = useQuery(['currentUser'], getUserFn, {
 		enabled: !!token,
-		retry: 1,
+		retry: false,
 		select: (data) => data,
 		onSuccess: (data) => {
 			const userData = {
@@ -24,6 +24,7 @@ const AuthMiddleware = ({ children }: { children: React.ReactNode }) => {
 
 	if (query.isError) {
 		console.log("opss there's an error");
+		localStorage.removeItem('token');
 	}
 
 	return <div>{children}</div>;

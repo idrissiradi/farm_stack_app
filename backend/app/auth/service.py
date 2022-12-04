@@ -3,13 +3,13 @@ import string
 import datetime
 from typing import Any, Optional
 
-# from rich import print
 from fastapi import Request, Response, HTTPException, BackgroundTasks
 from pydantic import EmailStr
 from fastapi.encoders import jsonable_encoder
 
 from app.auth.utils import send_email, verify_password
 from app.auth.models import (
+    User,
     UserInDB,
     ResetInDB,
     VerifyInDB,
@@ -112,10 +112,11 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
         user_id=id,
         token=refresh_token,
         expired_at=datetime.datetime.utcnow()
-        + datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
+        + datetime.timedelta(seconds=settings.REFRESH_TOKEN_EXPIRE_SECONDS),
     )
+
     data = jsonable_encoder(user_token)
-    await request.app.mongodb.UserToken.delete_one({"user_id": id})
+    await request.app.mongodb.UserToken.delete_many({"user_id": id})
     await request.app.mongodb.UserToken.insert_one(data)
 
     response.set_cookie(
@@ -124,10 +125,8 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
         httponly=True,
         samesite="none",
         secure=True,
-        max_age=datetime.datetime.utcnow()
-        + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-        expires=datetime.datetime.utcnow()
-        + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        max_age=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
+        expires=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
     )
 
     response.set_cookie(
@@ -136,10 +135,8 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
         httponly=True,
         samesite="none",
         secure=True,
-        max_age=datetime.datetime.utcnow()
-        + datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
-        expires=datetime.datetime.utcnow()
-        + datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
+        max_age=settings.REFRESH_TOKEN_EXPIRE_SECONDS,
+        expires=settings.REFRESH_TOKEN_EXPIRE_SECONDS,
     )
     token = "".join(
         random.choice(string.ascii_lowercase + string.digits) for _ in range(20)
@@ -166,8 +163,8 @@ async def generate_access_token(request: Request, response: Response) -> str:
         httponly=True,
         samesite="none",
         secure=True,
-        expires=datetime.datetime.utcnow()
-        + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        max_age=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
+        expires=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
     )
     token = "".join(
         random.choice(string.ascii_lowercase + string.digits) for _ in range(20)

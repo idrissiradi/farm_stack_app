@@ -1,6 +1,5 @@
 from typing import Optional
 
-# from rich import print
 from fastapi import Request
 from pydantic import EmailStr
 

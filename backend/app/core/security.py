@@ -52,7 +52,7 @@ def create_access_token(id: int) -> str:
         {
             "user_id": id,
             "exp": datetime.datetime.utcnow()
-            + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            + datetime.timedelta(seconds=settings.ACCESS_TOKEN_EXPIRE_SECONDS),
             "iat": datetime.datetime.utcnow(),
         },
         settings.SECRET_KEY,
@@ -78,7 +78,7 @@ def create_refresh_token(id):
         {
             "user_id": id,
             "exp": datetime.datetime.utcnow()
-            + datetime.timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES),
+            + datetime.timedelta(seconds=settings.REFRESH_TOKEN_EXPIRE_SECONDS),
             "iat": datetime.datetime.utcnow(),
         },
         settings.SECRET_KEY,

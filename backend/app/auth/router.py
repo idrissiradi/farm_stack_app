@@ -1,9 +1,6 @@
-import random
-import string
 from http import HTTPStatus
 from typing import Any
 
-# from rich import print  # dev mode
 from fastapi import Body, Request, Response, APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, RedirectResponse
 
@@ -17,7 +14,7 @@ from app.auth.service import (
     send_reset_password,
     generate_access_token,
 )
-from app.core.security import decode_access_token
+from app.core.security import decode_access_token, decode_refresh_token
 from app.auth.selectors import (
     get_user_by_id,
     get_user_reset,
@@ -114,12 +111,14 @@ async def refresh_token(
 async def logout(request: Request, response: Response) -> Any:
     """Log out authenticated user"""
 
-    refresh_token = request.cookies.get("refresh_token")
-    token = await get_user_token(refresh_token)
-    if not token:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, "Invalide credentials")
+    # refresh_token = request.cookies.get("refresh_token")
+    # print(refresh_token)
+    # token = await get_user_token(request, refresh_token)
+    # print(token)
+    # if not token:
+    #     raise HTTPException(HTTPStatus.BAD_REQUEST, "Invalide credentials")
 
-    await request.app.mongodb.UserToken.delete_one({"_id": token["_id"]})
+    # await request.app.mongodb.UserToken.delete_many({"user_id": token["user_id"]})
     response.delete_cookie(key="access_token")
     response.delete_cookie(key="refresh_token")
     return {"message": "success"}
