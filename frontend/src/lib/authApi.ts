@@ -8,7 +8,6 @@ import {
 	ResetPasswordRequest,
 } from './types/userTypes';
 
-// const { NEXT_URL } = process.env;
 const BASE_URL = 'http://localhost:8000/api';
 
 const authApi = axios.create({
@@ -47,10 +46,7 @@ export const refreshAccessTokenFn = async () => {
 };
 
 export const registerUserFn = async (user: RegisterRequest) => {
-	const userSubmit = {
-		user,
-	};
-	const response = await authApi.post('/auth/register', userSubmit);
+	const response = await authApi.post('/auth/register', { user: user });
 	return response.data;
 };
 
@@ -62,6 +58,7 @@ export const loginUserFn = async (user: LoginRequest) => {
 
 export const logoutUserFn = async () => {
 	const response = await authApi.post('/auth/logout');
+	localStorage.removeItem('token');
 	return response.data;
 };
 

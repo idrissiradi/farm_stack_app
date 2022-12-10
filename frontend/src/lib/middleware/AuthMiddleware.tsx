@@ -12,16 +12,13 @@ const AuthMiddleware = ({ children }: { children: React.ReactNode }) => {
 		retry: false,
 		select: (data) => data,
 		onSuccess: (data) => {
-			const userData = {
-				user: data,
-			};
-			stateContext.dispatch({ type: 'SET_USER', payload: userData });
+			stateContext.dispatch({
+				type: 'SET_USER',
+				payload: { user: data },
+			});
 		},
 		onError: () => {
-			const userData = {
-				user: null,
-			};
-			stateContext.dispatch({ type: 'LOGOUT', payload: userData });
+			stateContext.dispatch({ type: 'LOGOUT', payload: { user: null } });
 		},
 	});
 
