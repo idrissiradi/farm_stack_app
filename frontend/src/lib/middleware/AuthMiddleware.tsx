@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { getUserFn } from '../authApi';
 import { useStateContext } from '../../context';
 
@@ -15,6 +16,12 @@ const AuthMiddleware = ({ children }: { children: React.ReactNode }) => {
 				user: data,
 			};
 			stateContext.dispatch({ type: 'SET_USER', payload: userData });
+		},
+		onError: () => {
+			const userData = {
+				user: null,
+			};
+			stateContext.dispatch({ type: 'LOGOUT', payload: userData });
 		},
 	});
 

@@ -111,14 +111,6 @@ async def refresh_token(
 async def logout(request: Request, response: Response) -> Any:
     """Log out authenticated user"""
 
-    # refresh_token = request.cookies.get("refresh_token")
-    # print(refresh_token)
-    # token = await get_user_token(request, refresh_token)
-    # print(token)
-    # if not token:
-    #     raise HTTPException(HTTPStatus.BAD_REQUEST, "Invalide credentials")
-
-    # await request.app.mongodb.UserToken.delete_many({"user_id": token["user_id"]})
     response.delete_cookie(key="access_token")
     response.delete_cookie(key="refresh_token")
     return {"message": "success"}

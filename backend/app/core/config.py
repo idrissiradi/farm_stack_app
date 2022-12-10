@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     SERVER_HOST: str = "http://localhost:8000/"
 
     # JWT token
-    ACCESS_TOKEN_EXPIRE_SECONDS: int = 25  # one day
-    REFRESH_TOKEN_EXPIRE_SECONDS: int = 60  # one week
+    ACCESS_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24  # one day
+    REFRESH_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # one week
     SECRET_KEY: str = secrets.token_urlsafe(32)
     JWT_ALGORITHM: str = "HS256"
 

@@ -10,7 +10,7 @@ const Login = () => {
 
 	const stateContext = useStateContext();
 	const data = stateContext.state.user;
-	console.log(data);
+
 	useEffect(() => {
 		if (data?.user.role === 'owner' || data?.user.role === 'staff') {
 			navigate('/dashboard');
