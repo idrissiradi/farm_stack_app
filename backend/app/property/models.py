@@ -7,7 +7,7 @@ from app.core.model import BaseClass
 from app.auth.models import UserModel
 
 
-class PostType(str, enum.Enum):
+class PropertyType(str, enum.Enum):
     type_apartment = "Apartment"
     type_house = "House"
     type_villas = "Villas"
@@ -19,56 +19,56 @@ class PostType(str, enum.Enum):
     type_car = "Car"
 
 
-class PostFilterParams(BaseModel):
-    type: PostType = ""
+class PropertyFilterParams(BaseModel):
+    type: PropertyType = ""
     owner: str = ""
     limit: int = 20
     offset: int = 0
 
 
-class PostBase(BaseClass):
+class PropertyBase(BaseClass):
     title: str
     slug: str
     description: str
     is_active: bool = True
     price: float
-    post_type: Optional[PostType] = None
+    Property_type: Optional[PropertyType] = None
 
 
-class Post(PostBase):
+class Property(PropertyBase):
     owner: UserModel
 
 
-class PostInDB(Post):
+class PropertyInDB(Property):
     pass
 
 
-class PostInCreate(BaseModel):
+class PropertyInCreate(BaseModel):
     title: str
     description: str
     price: float
-    post_type: PostType
+    Property_type: PropertyType
 
 
-class PostInResponse(BaseModel):
-    post: Post
+class PropertyInResponse(BaseModel):
+    Property: Property
 
 
-class ManyPostsInResponse(BaseModel):
-    posts: List[Post]
-    posts_count: int = Field(..., alias="postsCount")
+class ManyPropertiesInResponse(BaseModel):
+    Properties: List[Property]
+    Properties_count: int = Field(..., alias="PropertysCount")
 
 
-class PostInUpdate(BaseModel):
+class PropertyInUpdate(BaseModel):
     title: str
     slug: str
     description: str
     price: float
-    post_type: Optional[PostType] = None
+    Property_type: Optional[PropertyType] = None
 
 
 class Media(BaseClass):
-    post_id: str
+    Property_id: str
     is_feature: bool = False
     image_url: Optional[AnyUrl] = None
 

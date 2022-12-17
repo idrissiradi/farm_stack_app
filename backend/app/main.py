@@ -5,7 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.auth.router import router as auth_router
 from app.core.config import settings
-from app.post.router import router as post_router
+from app.property.router import router as property_router
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -35,7 +35,7 @@ async def shutdown_db_client():
 
 
 app.include_router(auth_router, prefix=settings.API_STR, tags=["Authentication"])
-app.include_router(post_router, prefix=settings.API_STR, tags=["Posts"])
+app.include_router(property_router, prefix=settings.API_STR, tags=["Properties"])
 
 
 if __name__ == "__main__":

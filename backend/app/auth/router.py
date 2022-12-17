@@ -156,5 +156,6 @@ async def reset_password(request: Request, data: ResetSchema) -> Any:
 @router.get("/profile", status_code=HTTPStatus.OK, response_model=UserInResponse)
 async def get_user(request: Request) -> Any:
     """Get current user"""
+
     user = await is_authenticated(request)
     return UserInResponse(user=user)
