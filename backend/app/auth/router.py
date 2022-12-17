@@ -2,11 +2,11 @@ from http import HTTPStatus
 from typing import Any
 
 from fastapi import Body, Request, Response, APIRouter, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 
 from app.auth.utils import get_password_hash
 from app.auth.models import User, ResetSchema, UserInLogin, UserInCreate, UserInResponse
-from app.auth.service import (
+from app.auth.services import (
     create_user,
     authenticate,
     generate_token,
@@ -14,14 +14,8 @@ from app.auth.service import (
     send_reset_password,
     generate_access_token,
 )
-from app.core.security import decode_access_token, decode_refresh_token
-from app.auth.selectors import (
-    get_user_by_id,
-    get_user_reset,
-    get_user_token,
-    get_verify_email,
-    get_user_by_email,
-)
+from app.core.services import is_authenticated, create_aliased_response
+from app.auth.selectors import get_user_reset, get_verify_email, get_user_by_email
 
 router = APIRouter(prefix="/auth")
 
@@ -48,7 +42,7 @@ async def register(
     if new_user:
         email = new_user["email"]
         await send_verify_email(email, request, background_tasks)
-        return JSONResponse(content=new_user)
+        return create_aliased_response(new_user)
 
     raise HTTPException(
         status_code=HTTPStatus.BAD_REQUEST, detail="Something went wrong / Bad request"
@@ -162,14 +156,5 @@ async def reset_password(request: Request, data: ResetSchema) -> Any:
 @router.get("/profile", status_code=HTTPStatus.OK, response_model=UserInResponse)
 async def get_user(request: Request) -> Any:
     """Get current user"""
-
-    access_token = request.cookies.get("access_token")
-    if access_token:
-        user_id = decode_access_token(access_token)
-        user = await get_user_by_id(request, user_id)
-        return UserInResponse(user=user)
-
-    raise HTTPException(
-        status_code=HTTPStatus.NOT_FOUND,
-        detail="The user with this username does not exist in the system.",
-    )
+    user = await is_authenticated(request)
+    return UserInResponse(user=user)

@@ -1,10 +1,24 @@
-import { SyntheticEvent, useState } from 'react';
+import { SyntheticEvent, useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+
 import { RecoverPasswordFn } from '../../../lib/authApi';
+import { useStateContext } from '../../../context';
 
 const RecoverPassword = () => {
+	const navigate = useNavigate();
+
+	const stateContext = useStateContext();
+	const data = stateContext.state.user;
+
 	const [formData, setFormData] = useState({ email: '' });
 	const { email } = formData;
+
+	useEffect(() => {
+		if (data) {
+			navigate('/');
+		}
+	}, [navigate, data]);
 
 	const onChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
 		setFormData((prevState) => ({

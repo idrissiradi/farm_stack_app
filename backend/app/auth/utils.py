@@ -27,13 +27,13 @@ def password_match(v: str, values) -> str:
     return v
 
 
-async def send_email(data: dict):
+def send_email(data: dict):
     email = emails.Message(
         subject=data["email_subject"],
         html=data["email_body"],
         mail_to=[data["to_email"]],
         mail_from=data["from"],
     )
-    await email.send(
+    email.send(
         smtp=data["smtp"],
     )

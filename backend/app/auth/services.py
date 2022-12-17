@@ -9,7 +9,6 @@ from fastapi.encoders import jsonable_encoder
 
 from app.auth.utils import send_email, verify_password
 from app.auth.models import (
-    User,
     UserInDB,
     ResetInDB,
     VerifyInDB,

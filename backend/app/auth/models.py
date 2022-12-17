@@ -41,8 +41,8 @@ class UserInLogin(BaseModel):
 
 
 class UserInCreate(UserInLogin):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_name: str
+    last_name: str
     password_confirm: str
 
     _check_password_confirm = validator("password_confirm", allow_reuse=True)(
@@ -56,19 +56,18 @@ class UserInCreate(UserInLogin):
         self.password = get_password_hash(password)
 
 
-class UserBaseModel(BaseModel):
-    first_name: Optional[str]
-    last_name: Optional[str]
+class UserModel(BaseModel):
+    first_name: str
+    last_name: str
     email: EmailStr
-    is_verified: Optional[bool]
-    is_active: Optional[bool]
-    is_superuser: Optional[bool]
+    is_verified: bool
+    is_active: bool
+    is_superuser: bool
     role: UserRole
-    auth_provider: AuthProvider
 
 
 class UserInResponse(BaseModel):
-    user: UserBaseModel
+    user: UserModel
 
 
 class User(UserInResponse):
