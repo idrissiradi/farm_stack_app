@@ -14,8 +14,13 @@ async def get_properties(
     properties_docs = request.app.mongodb.Properties.find(
         limit=limit, skip=offset
     ).sort("created_at")
-
     async for row in properties_docs:
         properties.append(Property(**row))
-
     return properties
+
+
+async def get_property_by_slug(request: Request, slug: str) -> Property:
+    """Get property by slug"""
+
+    property = await request.app.mongodb.Properties.find_one({"slug": slug})
+    return property

@@ -56,7 +56,7 @@ class PropertyInResponse(BaseModel):
 
 class ManyPropertiesInResponse(BaseModel):
     Properties: List[Property]
-    Properties_count: int = Field(..., alias="PropertysCount")
+    Properties_count: int = Field(..., alias="Properties_count")
 
 
 class PropertyInUpdate(BaseModel):
@@ -80,4 +80,4 @@ class MediaInUpdate(BaseModel):
 
 class MediaInResponse(BaseModel):
     media: List[Media]
-    media_count: int = Field(..., alias="mediaCount")
+    media_count: int = Field(..., alias="media_count")

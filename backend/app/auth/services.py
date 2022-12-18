@@ -1,6 +1,7 @@
 import random
 import string
 import datetime
+from http import HTTPStatus
 from typing import Any, Optional
 
 from fastapi import Request, Response, HTTPException, BackgroundTasks
@@ -41,7 +42,6 @@ async def send_verify_email(
     email: EmailStr, request: Request, background_tasks: BackgroundTasks
 ) -> Any:
     """Send verification email"""
-    print("sending email ..")
     user = await get_user_by_email(request, email)
     full_name = user["first_name"] + user["last_name"]
     email: EmailStr = user["email"]
@@ -140,7 +140,7 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
     token = "".join(
         random.choice(string.ascii_lowercase + string.digits) for _ in range(20)
     )
-    return token
+    return access_token
 
 
 async def generate_access_token(request: Request, response: Response) -> str:
@@ -149,9 +149,8 @@ async def generate_access_token(request: Request, response: Response) -> str:
     refresh_token = request.cookies.get("refresh_token")
     user_id = decode_refresh_token(refresh_token)
     user_token = await request.app.mongodb.UserToken.find_one({"user_id": user_id})
-
     if not user_token:
-        raise HTTPException(403, "unauthenticated")
+        raise HTTPException(HTTPStatus.FORBIDDEN, "unauthenticated")
 
     user = await get_user_by_id(request, user_id)
     access_token = create_access_token(user["_id"])
