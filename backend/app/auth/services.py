@@ -29,7 +29,8 @@ from app.auth.selectors import get_user, get_user_by_id, get_user_by_email
 async def create_user(request: Request, user: UserInCreate) -> Optional[UserInResponse]:
     """Create new user"""
     user.change_password(user.password)
-    db_user = UserInDB(**user.dict())
+    username = user.email.split("@")[0]
+    db_user = UserInDB(**user.dict(), username=username)
     data = jsonable_encoder(db_user)
     new_user = await request.app.mongodb.Users.insert_one(data)
     created_user = await request.app.mongodb.Users.find_one(

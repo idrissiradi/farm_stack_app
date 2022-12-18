@@ -30,7 +30,7 @@ from app.auth.services import (
     generate_access_token,
 )
 from app.core.security import get_current_user_authorizer
-from app.core.services import is_authenticated, create_aliased_response
+from app.core.services import create_aliased_response
 from app.auth.selectors import get_user_reset, get_verify_email, get_user_by_email
 
 router = APIRouter(prefix="/auth")

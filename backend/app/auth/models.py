@@ -23,6 +23,7 @@ class UserBase(BaseClass):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: EmailStr = None
+    username: Optional[str] = None
     is_verified: Optional[bool] = False
     is_active: Optional[bool] = True
     is_superuser: Optional[bool] = False
@@ -60,6 +61,7 @@ class UserModel(BaseModel):
     first_name: str
     last_name: str
     email: EmailStr
+    username: str
     is_verified: bool
     is_active: bool
     is_superuser: bool

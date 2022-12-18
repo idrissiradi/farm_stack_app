@@ -20,7 +20,7 @@ class PropertyType(str, enum.Enum):
 
 
 class PropertyFilterParams(BaseModel):
-    type: PropertyType = ""
+    type: str = ""
     owner: str = ""
     limit: int = 20
     offset: int = 0
