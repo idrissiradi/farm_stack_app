@@ -1,9 +1,7 @@
 from typing import List, Optional
 
 from fastapi import Request
-from pydantic import EmailStr
 
-from app.auth.models import UserModel
 from app.property.models import Property, PropertyFilterParams
 
 

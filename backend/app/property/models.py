@@ -32,7 +32,7 @@ class PropertyBase(BaseClass):
     description: str
     is_active: bool = True
     price: float
-    Property_type: Optional[PropertyType] = None
+    property_type: Optional[PropertyType] = None
 
 
 class Property(PropertyBase):
@@ -47,16 +47,16 @@ class PropertyInCreate(BaseModel):
     title: str
     description: str
     price: float
-    Property_type: PropertyType
+    property_type: PropertyType
 
 
 class PropertyInResponse(BaseModel):
-    Property: Property
+    property: Property
 
 
 class ManyPropertiesInResponse(BaseModel):
-    Properties: List[Property]
-    Properties_count: int = Field(..., alias="Properties_count")
+    properties: List[Property]
+    properties_count: int = Field(..., alias="Properties_count")
 
 
 class PropertyInUpdate(BaseModel):
@@ -64,13 +64,17 @@ class PropertyInUpdate(BaseModel):
     slug: str
     description: str
     price: float
-    Property_type: Optional[PropertyType] = None
+    is_active: bool
+    property_type: Optional[PropertyType] = None
 
 
 class Media(BaseClass):
-    Property_id: str
+    property_id: str
     is_feature: bool = False
     image_url: Optional[AnyUrl] = None
+
+    class Config:
+        title = "PropertyMedia"
 
 
 class MediaInUpdate(BaseModel):
