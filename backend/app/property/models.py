@@ -56,15 +56,14 @@ class PropertyInResponse(BaseModel):
 
 class ManyPropertiesInResponse(BaseModel):
     properties: List[Property]
-    properties_count: int = Field(..., alias="Properties_count")
+    properties_count: int = Field(..., alias="properties_count")
 
 
 class PropertyInUpdate(BaseModel):
-    title: str
-    slug: str
-    description: str
-    price: float
-    is_active: bool
+    title: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    is_active: Optional[bool] = True
     property_type: Optional[PropertyType] = None
 
 

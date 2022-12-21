@@ -56,10 +56,8 @@ async def register(
 
     new_user = await create_user(request, user)
     if new_user:
-        email = new_user["email"]
-        await send_verify_email(email, request, background_tasks)
+        await send_verify_email(new_user.email, request, background_tasks)
         return create_aliased_response(new_user)
-
     raise HTTPException(
         status_code=HTTPStatus.BAD_REQUEST, detail="Something went wrong / Bad request"
     )
@@ -76,7 +74,7 @@ async def verify(request: Request, token: str, redirect_url: str) -> Any:
             detail="Invalid Link",
         )
 
-    user = await get_user_by_email(request, verify_email["email"])
+    user = await get_user_by_email(request, verify_email.email)
     if not user:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
@@ -84,9 +82,9 @@ async def verify(request: Request, token: str, redirect_url: str) -> Any:
         )
 
     await request.app.mongodb.Users.update_one(
-        {"email": user["email"]}, {"$set": {"is_verified": True}}
+        {"email": user.email}, {"$set": {"is_verified": True}}
     )
-    await request.app.mongodb.UserVerify.delete_one({"_id": verify_email["_id"]})
+    await request.app.mongodb.UserVerify.delete_one({"_id": verify_email.id})
     return RedirectResponse(redirect_url)
 
 
@@ -99,10 +97,10 @@ async def login(data: UserInLogin, response: Response, request: Request) -> Any:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail="Incorrect email or password"
         )
-    elif not user["is_active"]:
+    elif not user.is_active:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Inactive user")
 
-    token = await generate_token(user["_id"], request, response)
+    token = await generate_token(user.id, request, response)
     return User(user=user, token=token)
 
 
@@ -112,7 +110,6 @@ async def refresh_token(
     response: Response,
 ) -> Any:
     """Refresh token API"""
-
     token = await generate_access_token(request, response)
     return token
 
@@ -120,7 +117,6 @@ async def refresh_token(
 @router.post("/logout", status_code=HTTPStatus.OK)
 async def logout(request: Request, response: Response) -> Any:
     """Log out authenticated user"""
-
     response.delete_cookie(key="access_token")
     response.delete_cookie(key="refresh_token")
     return {"message": "success"}
@@ -131,21 +127,19 @@ async def recover_password(
     request: Request, email: str, background_tasks: BackgroundTasks
 ) -> Any:
     """Forget password"""
-
     user = await get_user_by_email(email=email, request=request)
     if not user:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
             detail="The user with this username does not exist in the system.",
         )
-    await send_reset_password(user["email"], background_tasks, request)
+    await send_reset_password(user.email, background_tasks, request)
     return {"message": "Password recovery email sent"}
 
 
 @router.post("/reset", status_code=HTTPStatus.OK)
 async def reset_password(request: Request, data: ResetSchema) -> Any:
     """Reset password"""
-
     if data.password != data.password_confirm:
         raise HTTPException(HTTPStatus.UNAUTHORIZED, "Password do not match")
 
@@ -153,7 +147,7 @@ async def reset_password(request: Request, data: ResetSchema) -> Any:
     if not user_reset:
         raise HTTPException(HTTPStatus.NOT_FOUND, "Invalid Link")
 
-    user = await get_user_by_email(request, user_reset["email"])
+    user = await get_user_by_email(request, user_reset.email)
     if not user:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
@@ -162,7 +156,7 @@ async def reset_password(request: Request, data: ResetSchema) -> Any:
 
     hashed_password = get_password_hash(data.password)
     await request.app.mongodb.Users.update_one(
-        {"_id": user["_id"]}, {"$set": {"password": hashed_password}}
+        {"email": user.email}, {"$set": {"password": hashed_password}}
     )
     await request.app.mongodb.UserReset.delete_one({"token": data.token})
 
@@ -171,7 +165,6 @@ async def reset_password(request: Request, data: ResetSchema) -> Any:
 
 @router.get("/profile", status_code=HTTPStatus.OK, response_model=UserInResponse)
 async def get_user(
-    request: Request,
     user: Optional[UserModel] = Depends(get_current_user_authorizer()),
 ) -> Any:
     """Get current user Profile"""

@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.auth.selectors import get_user_by_id
 
 
-def _get_authorization_token(request: Request):
+def _get_authorization_token(request: Request) -> str:
     token = request.cookies.get("access_token")
     if not token:
         raise HTTPException(
@@ -25,6 +25,7 @@ async def _get_current_user(
 ) -> UserModel:
     user_id = decode_access_token(token)
     user = await get_user_by_id(request, user_id)
+
     if not user:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found")
     return user
@@ -46,7 +47,7 @@ async def _get_current_user_optional(
     return None
 
 
-def get_current_user_authorizer(*, required: bool = True):
+def get_current_user_authorizer(*, required: bool = True) -> Optional[UserModel]:
     if required:
         return _get_current_user
     else:

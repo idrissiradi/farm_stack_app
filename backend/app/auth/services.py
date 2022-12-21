@@ -12,10 +12,10 @@ from app.auth.utils import send_email, verify_password
 from app.auth.models import (
     UserInDB,
     ResetInDB,
+    UserModel,
     VerifyInDB,
     UserInCreate,
     UserTokenInDB,
-    UserInResponse,
 )
 from app.core.config import settings
 from app.core.security import (
@@ -23,10 +23,10 @@ from app.core.security import (
     create_refresh_token,
     decode_refresh_token,
 )
-from app.auth.selectors import get_user, get_user_by_id, get_user_by_email
+from app.auth.selectors import get_user, get_user_by_email
 
 
-async def create_user(request: Request, user: UserInCreate) -> Optional[UserInResponse]:
+async def create_user(request: Request, user: UserInCreate) -> Optional[UserModel]:
     """Create new user"""
     user.change_password(user.password)
     username = user.email.split("@")[0]
@@ -36,7 +36,7 @@ async def create_user(request: Request, user: UserInCreate) -> Optional[UserInRe
     created_user = await request.app.mongodb.Users.find_one(
         {"_id": new_user.inserted_id}, {"password": 0, "_id": 0}
     )
-    return created_user
+    return UserModel(**created_user)
 
 
 async def send_verify_email(
@@ -44,8 +44,8 @@ async def send_verify_email(
 ) -> Any:
     """Send verification email"""
     user = await get_user_by_email(request, email)
-    full_name = user["first_name"] + user["last_name"]
-    email: EmailStr = user["email"]
+    full_name = user.first_name + " " + user.last_name
+    email: EmailStr = user.email
     token = "".join(
         random.choice(string.ascii_lowercase + string.digits) for _ in range(10)
     )
@@ -91,15 +91,14 @@ async def send_verify_email(
 
 async def authenticate(
     request: Request, email: EmailStr, password: str
-) -> Optional[UserInResponse]:
+) -> Optional[UserInDB]:
     """Check authenticated user"""
     user = await get_user(request, email)
     if not user:
         return None
-    if not verify_password(password, user["password"]):
+    if not verify_password(password, user.password):
         return None
-    auth_user = await get_user_by_email(request, email)
-    return auth_user
+    return user
 
 
 async def generate_token(id: int, request: Request, response: Response) -> str:
@@ -141,7 +140,7 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
     token = "".join(
         random.choice(string.ascii_lowercase + string.digits) for _ in range(20)
     )
-    return access_token
+    return token
 
 
 async def generate_access_token(request: Request, response: Response) -> str:
@@ -153,9 +152,7 @@ async def generate_access_token(request: Request, response: Response) -> str:
     if not user_token:
         raise HTTPException(HTTPStatus.FORBIDDEN, "unauthenticated")
 
-    user = await get_user_by_id(request, user_id)
-    access_token = create_access_token(user["_id"])
-
+    access_token = create_access_token(user_id)
     response.set_cookie(
         "access_token",
         access_token,
@@ -177,13 +174,13 @@ async def send_reset_password(
     """Send reset password email"""
 
     user = await get_user_by_email(request, email)
-    full_name = user["first_name"] + " " + user["last_name"]
+    full_name = user.first_name + " " + user.last_name
     token = "".join(
         random.choice(string.ascii_lowercase + string.digits) for _ in range(10)
     )
-    reset = ResetInDB(email=user["email"], token=token)
+    reset = ResetInDB(email=user.email, token=token)
     data = jsonable_encoder(reset)
-    await request.app.mongodb.UserReset.delete_one({"email": user["email"]})
+    await request.app.mongodb.UserReset.delete_one({"email": user.email})
     await request.app.mongodb.UserReset.insert_one(data)
 
     url = settings.FRONTEND_URL + "/reset" + "?token=" + str(token)

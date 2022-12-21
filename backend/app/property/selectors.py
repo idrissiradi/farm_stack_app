@@ -21,10 +21,12 @@ async def get_properties(
     return properties
 
 
-async def get_property_by_slug(request: Request, slug: str) -> Property:
+async def get_property_by_slug(request: Request, slug: str) -> Optional[Property]:
     """Get property by slug"""
     property = await request.app.mongodb.Properties.find_one({"slug": slug})
-    return property
+    if property:
+        return Property(**property)
+    return None
 
 
 async def get_user_properties(

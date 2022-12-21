@@ -59,7 +59,7 @@ async def get_properties_feed(
 )
 async def get_properties_by_user(
     request: Request,
-    user: Optional[UserModel] = Depends(get_current_user_authorizer()),
+    user: UserModel = Depends(get_current_user_authorizer()),
     limit: int = Query(20, gt=0),
     offset: int = Query(0, ge=0),
 ) -> Any:
@@ -84,7 +84,7 @@ async def new_property(
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST, detail="User not allowed"
             )
-        new_post = create_post(request, post, user)
+        new_post = await create_post(request, post, user)
         if new_post:
             return create_aliased_response(new_post)
     raise HTTPException(
@@ -102,13 +102,13 @@ async def get_property(
     slug: str = Path(..., min_length=1),
 ) -> Any:
     """Get property by slug"""
-    property: Property = await get_property_by_slug(request, slug)
+    property = await get_property_by_slug(request, slug)
     if not property:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
             detail=f"Property with slug '{slug}' not found",
         )
-    return create_aliased_response(PropertyInResponse(property))
+    return create_aliased_response(PropertyInResponse(property=property))
 
 
 @router.put(
@@ -123,9 +123,9 @@ async def update_property(
     user: Optional[UserModel] = Depends(get_current_user_authorizer()),
 ) -> Any:
     """Update Property"""
-    await check_property_owner(request, slug, user.username)
+    await check_property_owner(request, slug, user.email)
     updated_property = await update_property_by_slug(request, slug, data)
-    return create_aliased_response(PropertyInResponse(updated_property))
+    return create_aliased_response(PropertyInResponse(property=updated_property))
 
 
 @router.delete(
