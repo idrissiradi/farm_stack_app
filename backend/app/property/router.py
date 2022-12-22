@@ -2,13 +2,11 @@ from http import HTTPStatus
 from typing import Any, Optional
 
 from fastapi import Body, Path, Query, Depends, Request, APIRouter, HTTPException
-from pydantic import EmailStr
 
 from app.auth.models import UserModel
 from app.core.security import get_current_user_authorizer
 from app.core.services import create_aliased_response
 from app.property.models import (
-    Property,
     PropertyInCreate,
     PropertyInUpdate,
     PropertyInResponse,
@@ -52,26 +50,6 @@ async def get_properties_feed(
     )
 
 
-@router.get(
-    "/all",
-    response_model=ManyPropertiesInResponse,
-    status_code=HTTPStatus.OK,
-)
-async def get_properties_by_user(
-    request: Request,
-    user: UserModel = Depends(get_current_user_authorizer()),
-    limit: int = Query(20, gt=0),
-    offset: int = Query(0, ge=0),
-) -> Any:
-    """Get user properties"""
-    properties = await get_user_properties(request, user.username, limit, offset)
-    return create_aliased_response(
-        ManyPropertiesInResponse(
-            properties=properties, properties_count=len(properties)
-        )
-    )
-
-
 @router.post("/", response_model=PropertyInResponse, status_code=HTTPStatus.CREATED)
 async def new_property(
     request: Request,
@@ -93,6 +71,26 @@ async def new_property(
 
 
 @router.get(
+    "/",
+    response_model=ManyPropertiesInResponse,
+    status_code=HTTPStatus.OK,
+)
+async def get_properties_by_user(
+    request: Request,
+    user: UserModel = Depends(get_current_user_authorizer()),
+    limit: int = Query(20, gt=0),
+    offset: int = Query(0, ge=0),
+) -> Any:
+    """Get user properties"""
+    properties = await get_user_properties(request, user.username, limit, offset)
+    return create_aliased_response(
+        ManyPropertiesInResponse(
+            properties=properties, properties_count=len(properties)
+        )
+    )
+
+
+@router.get(
     "/{slug}",
     status_code=HTTPStatus.OK,
     response_model=PropertyInResponse,
@@ -100,12 +98,18 @@ async def new_property(
 async def get_property(
     request: Request,
     slug: str = Path(..., min_length=1),
+    user: Optional[UserModel] = Depends(get_current_user_authorizer()),
 ) -> Any:
-    """Get property by slug"""
+    """Get user property by slug"""
     property = await get_property_by_slug(request, slug)
     if not property:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
+            detail=f"Property with slug '{slug}' not found",
+        )
+    if not property.owner.email == user.email:
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED,
             detail=f"Property with slug '{slug}' not found",
         )
     return create_aliased_response(PropertyInResponse(property=property))
@@ -141,3 +145,22 @@ async def delete_property(
     await check_property_owner(request, slug, user.email)
     await delete_property_by_slug(request, slug, user.email)
     return {"message": "success"}
+
+
+@router.get(
+    "/{slug}",
+    status_code=HTTPStatus.OK,
+    response_model=PropertyInResponse,
+)
+async def get_property(
+    request: Request,
+    slug: str = Path(..., min_length=1),
+) -> Any:
+    """Get property by slug"""
+    property = await get_property_by_slug(request, slug)
+    if not property:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=f"Property with slug '{slug}' not found",
+        )
+    return create_aliased_response(PropertyInResponse(property=property))

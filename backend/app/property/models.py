@@ -26,6 +26,21 @@ class PropertyFilterParams(BaseModel):
     offset: int = 0
 
 
+class Address(BaseModel):
+    street: str
+    city: str
+
+
+class Media(BaseClass):
+    is_feature: bool = False
+    image_url: Optional[AnyUrl] = None
+
+
+class MediaModel(BaseModel):
+    is_feature: bool
+    image_url: Optional[AnyUrl]
+
+
 class PropertyBase(BaseClass):
     title: str
     slug: str
@@ -33,6 +48,8 @@ class PropertyBase(BaseClass):
     is_active: bool = True
     price: float
     property_type: Optional[PropertyType] = None
+    address: Address
+    media: List[Media] = []
 
 
 class Property(PropertyBase):
@@ -48,6 +65,8 @@ class PropertyInCreate(BaseModel):
     description: str
     price: float
     property_type: PropertyType
+    address: Address
+    media: List[MediaModel]
 
 
 class PropertyInResponse(BaseModel):
@@ -65,22 +84,5 @@ class PropertyInUpdate(BaseModel):
     price: Optional[float] = None
     is_active: Optional[bool] = True
     property_type: Optional[PropertyType] = None
-
-
-class Media(BaseClass):
-    property_id: str
-    is_feature: bool = False
-    image_url: Optional[AnyUrl] = None
-
-    class Config:
-        title = "PropertyMedia"
-
-
-class MediaInUpdate(BaseModel):
-    is_feature: bool
-    image_url: Optional[AnyUrl]
-
-
-class MediaInResponse(BaseModel):
-    media: List[Media]
-    media_count: int = Field(..., alias="media_count")
+    address: Optional[Address] = None
+    media: List[MediaModel] = None

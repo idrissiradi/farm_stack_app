@@ -1,7 +1,7 @@
 import random
 import string
 from http import HTTPStatus
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from fastapi import Request, HTTPException
 from slugify import slugify
@@ -10,6 +10,7 @@ from fastapi.encoders import jsonable_encoder
 
 from app.auth.models import UserModel
 from app.property.models import (
+    Media,
     Property,
     PropertyInDB,
     PropertyInCreate,
@@ -26,11 +27,20 @@ async def create_post(
     request: Request, property: PropertyInCreate, user: UserModel
 ) -> Optional[Property]:
     """Create new Post"""
+    new_doc = property.dict()
     slug = slugify(property.title)
     slug_exist = await get_property_by_slug(request, slug)
     if slug_exist:
         slug = "{slug}-{randstr}".format(slug=slug, randstr=random_string_generator())
-    db_property = PropertyInDB(**property.dict(), owner=user, slug=slug)
+
+    media_list: List[Media] = []
+    for row in property.media:
+        media_list.append(row)
+
+    new_doc["media"] = media_list
+    new_doc["owner"] = user
+    new_doc["slug"] = slug
+    db_property = PropertyInDB(**new_doc)
     data = jsonable_encoder(db_property)
     new_property = await request.app.mongodb.Properties.insert_one(data)
     created_property = await request.app.mongodb.Properties.find_one(
@@ -60,7 +70,6 @@ async def update_property_by_slug(
     request: Request, slug: str, property: PropertyInUpdate
 ) -> Property:
     db_property = await get_property_by_slug(request, slug)
-    print(db_property.is_active)
     if property.title:
         new_slug = slugify(property.title)
         slug_exist = await get_property_by_slug(request, new_slug)
@@ -71,15 +80,13 @@ async def update_property_by_slug(
         db_property.slug = new_slug
         db_property.title = property.title
 
-    if property.is_active != db_property.is_active:
-        db_property.is_active = property.is_active
-
-    db_property.is_active = db_property.is_active
-
+    db_property.is_active = property.is_active
     db_property.description = (
         property.description if property.description else db_property.description
     )
     db_property.price = property.price if property.price else db_property.price
+    db_property.address = property.address if property.address else db_property.address
+    db_property.media = property.media if property.media else db_property.media
     db_property.property_type = (
         property.property_type if property.property_type else db_property.property_type
     )
@@ -93,6 +100,8 @@ async def update_property_by_slug(
                 "is_active": db_property.is_active,
                 "price": db_property.price,
                 "property_type": db_property.property_type,
+                "address": jsonable_encoder(db_property.address),
+                "media": jsonable_encoder(db_property.media),
             }
         },
     )
