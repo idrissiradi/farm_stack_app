@@ -8,15 +8,18 @@ from slugify import slugify
 from pydantic import EmailStr
 from fastapi.encoders import jsonable_encoder
 
-from app.auth.models import UserModel
-from app.property.models import (
+from app.auth.models import UserInDB, UserModel
+from app.admin.models import (
     Media,
     Property,
+    Reservation,
     PropertyInDB,
     PropertyInCreate,
     PropertyInUpdate,
+    ReservationModel,
 )
-from app.property.selectors import get_property_by_slug
+from app.auth.selectors import get_user
+from app.admin.selectors import get_property_by_slug
 
 
 def random_string_generator(size=10, chars=string.ascii_lowercase + string.digits):
@@ -52,7 +55,7 @@ async def create_property(
 async def check_property_owner(
     request: Request, slug: str, email: EmailStr = ""
 ) -> Any:
-    """Check user permission"""
+    """Check user is the owner"""
     searched_property = await get_property_by_slug(request, slug)
     if not searched_property:
         raise HTTPException(
@@ -66,10 +69,42 @@ async def check_property_owner(
         )
 
 
+async def check_staff_permission(request: Request, user: UserModel, slug: str) -> Any:
+    """Check staff permission"""
+    searched_property = await get_property_by_slug(request, slug)
+    db_user: UserInDB = get_user(request, user.email)
+    staff = request.app.mongodb.Staff.find_one(
+        {"user_id": db_user.id, "property_id": searched_property.id}
+    )
+    if not staff:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail="You have no permission for modifying this article",
+        )
+
+
+async def check_user_permission(
+    request: Request, user: UserModel, slug: str = ""
+) -> Any:
+    """Check user permission"""
+    if not user.role == "owner" and not user.role == "staff":
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail="You have no permission for modifying this article",
+        )
+    if user.role == "staff":
+        await check_staff_permission(request, user, slug)
+
+
 async def update_property_by_slug(
     request: Request, slug: str, property: PropertyInUpdate
 ) -> Property:
     db_property = await get_property_by_slug(request, slug)
+    if not db_property:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Something went wrong / Bad request",
+        )
     if property.title:
         new_slug = slugify(property.title)
         slug_exist = await get_property_by_slug(request, new_slug)
@@ -112,6 +147,29 @@ async def update_property_by_slug(
 async def delete_property_by_slug(
     request: Request, slug: str, email: EmailStr = ""
 ) -> Any:
+    property = await get_property_by_slug(request, slug)
+    if not property:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Something went wrong / Bad request",
+        )
     await request.app.mongodb.Properties.delete_one(
         {"slug": slug, "owner_email": email}
+    )
+
+
+async def create_reservation(
+    request: Request, reservation: ReservationModel, slug: str
+) -> Reservation:
+    property = await get_property_by_slug(request, slug)
+    if property:
+        db_reservation = Reservation(property_id=property.id, **reservation.dict())
+        data = jsonable_encoder(db_reservation)
+        new_reservation = await request.app.mongodb.Reservations.insert_one(data)
+        created_reservation = await request.app.mongodb.Reservations.find_one(
+            {"_id": new_reservation.inserted_id}
+        )
+        return created_reservation
+    raise HTTPException(
+        status_code=HTTPStatus.BAD_REQUEST, detail="Something went wrong / Bad request"
     )

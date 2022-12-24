@@ -19,6 +19,7 @@ from app.auth.models import (
     ResetSchema,
     UserInLogin,
     UserInCreate,
+    UserInUpdate,
     UserInResponse,
 )
 from app.auth.services import (
@@ -27,6 +28,7 @@ from app.auth.services import (
     generate_token,
     send_verify_email,
     send_reset_password,
+    update_user_profile,
     generate_access_token,
 )
 from app.core.security import get_current_user_authorizer
@@ -159,14 +161,24 @@ async def reset_password(request: Request, data: ResetSchema) -> Any:
         {"email": user.email}, {"$set": {"password": hashed_password}}
     )
     await request.app.mongodb.UserReset.delete_one({"token": data.token})
-
     return {"message": "Password updated successfully"}
 
 
 @router.get("/profile", status_code=HTTPStatus.OK, response_model=UserInResponse)
-async def get_user(
+async def get_profile(
     user: Optional[UserModel] = Depends(get_current_user_authorizer()),
 ) -> Any:
     """Get current user Profile"""
-    profile = UserInResponse(user=user)
-    return profile
+    return UserInResponse(user=user)
+
+
+@router.put("/profile", status_code=HTTPStatus.OK, response_model=UserInResponse)
+async def update_profile(
+    request: Request,
+    user: Optional[UserModel] = Depends(get_current_user_authorizer()),
+    data: UserInUpdate = Body(..., embed=True),
+) -> Any:
+    """Update current user Profile"""
+
+    new_user = await update_user_profile(request, data, user)
+    return UserInResponse(user=new_user)

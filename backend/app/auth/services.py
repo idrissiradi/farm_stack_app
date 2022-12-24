@@ -15,6 +15,7 @@ from app.auth.models import (
     UserModel,
     VerifyInDB,
     UserInCreate,
+    UserInUpdate,
     UserTokenInDB,
 )
 from app.core.config import settings
@@ -211,3 +212,23 @@ async def send_reset_password(
         "smtp": smtp_options,
     }
     return background_tasks.add_task(send_email, data)
+
+
+async def update_user_profile(
+    request: Request, data: UserInUpdate, user: UserModel
+) -> UserModel:
+    user.first_name = data.first_name if data.first_name else user.first_name
+    user.last_name = data.last_name if data.last_name else user.last_name
+    user.role = data.role if data.role else user.role
+    await request.app.mongodb.Users.update_one(
+        {"email": user.email},
+        {
+            "$set": {
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.role,
+            }
+        },
+    )
+    updated_user = await get_user_by_email(request, user.email)
+    return updated_user

@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from fastapi import Request
 
-from app.property.models import Property, PropertyFilterParams
+from app.admin.models import Property, PropertyFilterParams
 
 
 async def get_properties(

@@ -76,8 +76,10 @@ class User(UserInResponse):
     token: str
 
 
-class UserInUpdate(UserBase):
-    password: Optional[str] = None
+class UserInUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    role: Optional[UserRole] = None
 
 
 class UserTokenInDB(BaseClass):

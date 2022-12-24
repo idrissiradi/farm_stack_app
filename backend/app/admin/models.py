@@ -1,5 +1,6 @@
 import enum
 from typing import List, Optional
+from datetime import datetime
 
 from pydantic import Field, AnyUrl, BaseModel
 
@@ -85,3 +86,28 @@ class PropertyInUpdate(BaseModel):
     property_type: Optional[PropertyType] = None
     address: Optional[Address] = None
     media: List[MediaModel] = None
+
+
+class ReservationModel(BaseModel):
+    date_start: Optional[datetime] = datetime.now()
+    date_end: Optional[datetime]
+    body: str = ""
+
+
+class Reservation(BaseClass, ReservationModel):
+    property_id: str
+
+
+class ReservationInUpdate(BaseModel):
+    date_start: Optional[datetime] = datetime.now()
+    date_end: Optional[datetime]
+    body: str = ""
+
+
+class StaffModel(BaseModel):
+    user_id: str
+    property_id: str
+
+
+class Staff(BaseClass, StaffModel):
+    pass
