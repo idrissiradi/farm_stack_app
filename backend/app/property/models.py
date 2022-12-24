@@ -31,14 +31,13 @@ class Address(BaseModel):
     city: str
 
 
-class Media(BaseClass):
-    is_feature: bool = False
-    image_url: Optional[AnyUrl] = None
-
-
 class MediaModel(BaseModel):
     is_feature: bool
     image_url: Optional[AnyUrl]
+
+
+class Media(BaseClass, MediaModel):
+    pass
 
 
 class PropertyBase(BaseClass):

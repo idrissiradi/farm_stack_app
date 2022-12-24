@@ -10,12 +10,20 @@ async def get_properties(
 ) -> Optional[List[Property]]:
     """Get feed properties"""
     properties: List[Property] = []
-    properties_docs = request.app.mongodb.Properties.find(
-        {"owner_username": filters.owner},
-        {"type": filters.type},
-        limit=filters.limit,
-        skip=filters.offset,
-    ).sort("created_at")
+    base_query = {}
+    if filters.owner:
+        base_query["owner.username"] = filters.owner
+    if filters.type:
+        base_query["property_type"] = filters.type
+
+    properties_docs = (
+        request.app.mongodb.Properties.find(
+            base_query,
+        )
+        .sort("created_at", -1)
+        .skip(filters.offset)
+        .limit(filters.limit)
+    )
     async for row in properties_docs:
         properties.append(Property(**row))
     return properties
@@ -30,13 +38,22 @@ async def get_property_by_slug(request: Request, slug: str) -> Optional[Property
 
 
 async def get_user_properties(
-    request: Request, username: str, limit: int, offset: int
+    request: Request, filters: PropertyFilterParams
 ) -> Optional[List[Property]]:
     """Get user properties"""
     properties: List[Property] = []
-    properties_docs = request.app.mongodb.Properties.find(
-        {"owner_username": username}, limit=limit, skip=offset
-    ).sort("created_at")
+    base_query = {}
+    base_query["owner.username"] = filters.owner
+    if filters.type:
+        base_query["property_type"] = filters.type
+    properties_docs = (
+        request.app.mongodb.Properties.find(
+            base_query,
+        )
+        .sort("created_at", -1)
+        .skip(filters.offset)
+        .limit(filters.limit)
+    )
     async for row in properties_docs:
         properties.append(Property(**row))
     return properties

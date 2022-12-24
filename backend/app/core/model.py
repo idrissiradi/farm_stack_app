@@ -7,7 +7,7 @@ from pydantic.json import timedelta_isoformat
 
 
 class BaseClass(BaseModel):
-    id: Optional[str] = Field(default_factory=uuid.uuid4, alias="_id")
+    id: str = Field(default_factory=uuid.uuid4, alias="_id")
     created_at: Optional[datetime] = Field(alias="created_at", default=datetime.now())
 
     class Config:
