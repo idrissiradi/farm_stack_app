@@ -41,6 +41,37 @@ class Media(BaseClass, MediaModel):
     pass
 
 
+class ReservationModel(BaseModel):
+    date_start: Optional[datetime] = datetime.now()
+    date_end: Optional[datetime]
+    body: str = ""
+
+
+class Reservation(BaseClass, ReservationModel):
+    property_id: str
+
+
+class ReservationInUpdate(BaseModel):
+    id: str
+    date_start: Optional[datetime] = datetime.now()
+    date_end: Optional[datetime]
+    body: str = ""
+
+
+class ManyReservationInResponse(BaseModel):
+    reservations: List[Reservation]
+    reservations_count: int = Field(..., alias="reservations_count")
+
+
+class StaffModel(BaseModel):
+    user_id: str
+    property_id: str
+
+
+class Staff(BaseClass, StaffModel):
+    pass
+
+
 class PropertyBase(BaseClass):
     title: str
     slug: str
@@ -71,6 +102,7 @@ class PropertyInCreate(BaseModel):
 
 class PropertyInResponse(BaseModel):
     property: Property
+    reservations: List[Reservation] = []
 
 
 class ManyPropertiesInResponse(BaseModel):
@@ -86,28 +118,3 @@ class PropertyInUpdate(BaseModel):
     property_type: Optional[PropertyType] = None
     address: Optional[Address] = None
     media: List[MediaModel] = None
-
-
-class ReservationModel(BaseModel):
-    date_start: Optional[datetime] = datetime.now()
-    date_end: Optional[datetime]
-    body: str = ""
-
-
-class Reservation(BaseClass, ReservationModel):
-    property_id: str
-
-
-class ReservationInUpdate(BaseModel):
-    date_start: Optional[datetime] = datetime.now()
-    date_end: Optional[datetime]
-    body: str = ""
-
-
-class StaffModel(BaseModel):
-    user_id: str
-    property_id: str
-
-
-class Staff(BaseClass, StaffModel):
-    pass

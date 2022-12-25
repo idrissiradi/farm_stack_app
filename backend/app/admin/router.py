@@ -5,13 +5,16 @@ from fastapi import Body, Path, Query, Depends, Request, APIRouter, HTTPExceptio
 
 from app.auth.models import UserModel
 from app.admin.models import (
+    Reservation,
     PropertyType,
     PropertyInCreate,
     PropertyInUpdate,
     ReservationModel,
     PropertyInResponse,
+    ReservationInUpdate,
     PropertyFilterParams,
     ManyPropertiesInResponse,
+    ManyReservationInResponse,
 )
 from app.core.security import get_current_user_authorizer
 from app.core.services import create_aliased_response
@@ -22,11 +25,13 @@ from app.admin.services import (
     check_user_permission,
     delete_property_by_slug,
     update_property_by_slug,
+    update_owner_reservation,
 )
 from app.admin.selectors import (
     get_properties,
     get_user_properties,
     get_property_by_slug,
+    all_property_reservation,
 )
 
 router = APIRouter(prefix="/properties")
@@ -73,7 +78,10 @@ async def get_property(
             status_code=HTTPStatus.NOT_FOUND,
             detail=f"Property with slug '{slug}' not found",
         )
-    return create_aliased_response(PropertyInResponse(property=property))
+    reservations = await all_property_reservation(request, slug)
+    return create_aliased_response(
+        PropertyInResponse(property=property, reservations=reservations)
+    )
 
 
 @router.get(
@@ -134,8 +142,11 @@ async def get_user_property(
     """Get user property by slug"""
     await check_user_permission(request, user, slug)
     await check_property_owner(request, slug, user.email)
+    reservations = await all_property_reservation(request, slug)
     property = await get_property_by_slug(request, slug)
-    return create_aliased_response(PropertyInResponse(property=property))
+    return create_aliased_response(
+        PropertyInResponse(property=property, reservations=reservations)
+    )
 
 
 @router.put(
@@ -187,6 +198,49 @@ async def new_reservation(
     await check_user_permission(request, user, slug)
     await check_property_owner(request, slug, user.email)
     new_reservation = await create_reservation(request, reservation, slug)
+    if new_reservation:
+        return create_aliased_response(ReservationModel(**new_reservation))
+    raise HTTPException(
+        status_code=HTTPStatus.BAD_REQUEST, detail="Something went wrong / Bad request"
+    )
+
+
+@router.get(
+    "/{slug}/reservations",
+    response_model=ReservationModel,
+    status_code=HTTPStatus.CREATED,
+)
+async def get_all_reservations(
+    request: Request,
+    slug: str = Path(..., min_length=1),
+    user: Optional[UserModel] = Depends(get_current_user_authorizer()),
+):
+    """Get all reservations for existing property"""
+    await check_user_permission(request, user, slug)
+    await check_property_owner(request, slug, user.email)
+    reservations = await all_property_reservation(request, slug)
+    return create_aliased_response(
+        ManyReservationInResponse(
+            reservations=reservations, reservations_count=len(reservations)
+        )
+    )
+
+
+@router.put(
+    "/{slug}/reservations",
+    response_model=ReservationModel,
+    status_code=HTTPStatus.CREATED,
+)
+async def update_reservation(
+    request: Request,
+    slug: str = Path(..., min_length=1),
+    reservation: ReservationInUpdate = Body(..., embed=True),
+    user: Optional[UserModel] = Depends(get_current_user_authorizer()),
+):
+    """Create new reservation"""
+    await check_user_permission(request, user, slug)
+    await check_property_owner(request, slug, user.email)
+    new_reservation = await update_owner_reservation(request, reservation)
     if new_reservation:
         return create_aliased_response(ReservationModel(**new_reservation))
     raise HTTPException(

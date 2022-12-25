@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { Fragment } from 'react';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
-import { BellIcon, MenuIcon, XIcon } from '@heroicons/react/24/outline';
+import { BellIcon, Menu, XIcon } from '@heroicons/react/24/outline';
 
 function classNames(...classes: any[]) {
 	return classes.filter(Boolean).join(' ');

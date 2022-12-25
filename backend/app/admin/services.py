@@ -173,3 +173,38 @@ async def create_reservation(
     raise HTTPException(
         status_code=HTTPStatus.BAD_REQUEST, detail="Something went wrong / Bad request"
     )
+
+
+async def update_owner_reservation(
+    request: Request, reservation: Reservation
+) -> Reservation:
+    reservation = await request.app.mongodb.Reservations.find_one(
+        {"_id": reservation.id}
+    )
+    db_reservation = Reservation(**reservation)
+    if db_reservation:
+        db_reservation.date_start = (
+            reservation.date_start
+            if reservation.date_start
+            else db_reservation.date_start
+        )
+        db_reservation.date_end = (
+            reservation.date_end if reservation.date_end else db_reservation.date_end
+        )
+        db_reservation.body = (
+            reservation.body if reservation.body else db_reservation.body
+        )
+        await request.app.mongodb.Reservations.update_one(
+            {"_id": reservation.id},
+            {
+                "$set": {
+                    "date_start": db_reservation.date_start,
+                    "date_end": db_reservation.date_end,
+                    "body": db_reservation.body,
+                }
+            },
+        )
+        updated_reservation = await request.app.mongodb.Reservations.find_one(
+            {"_id": reservation.id}
+        )
+        return updated_reservation
