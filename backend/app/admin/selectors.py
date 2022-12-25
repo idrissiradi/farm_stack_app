@@ -77,3 +77,11 @@ async def all_property_reservation(
     async for row in reservations_docs:
         reservations.append(Reservation(**row))
     return reservations
+
+
+async def get_reservation_by_id(request: Request, id: str) -> Optional[Reservation]:
+    """Get reservation by id"""
+    reservation = await request.app.mongodb.Reservations.find_one({"_id": id})
+    if reservation:
+        return Reservation(**reservation)
+    return None

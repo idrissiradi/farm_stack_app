@@ -19,7 +19,7 @@ from app.admin.models import (
     ReservationModel,
 )
 from app.auth.selectors import get_user
-from app.admin.selectors import get_property_by_slug
+from app.admin.selectors import get_property_by_slug, get_reservation_by_id
 
 
 def random_string_generator(size=10, chars=string.ascii_lowercase + string.digits):
@@ -154,7 +154,7 @@ async def delete_property_by_slug(
             detail="Something went wrong / Bad request",
         )
     await request.app.mongodb.Properties.delete_one(
-        {"slug": slug, "owner_email": email}
+        {"slug": slug, "owner.email": email}
     )
 
 
@@ -166,8 +166,8 @@ async def create_reservation(
         db_reservation = Reservation(property_id=property.id, **reservation.dict())
         data = jsonable_encoder(db_reservation)
         new_reservation = await request.app.mongodb.Reservations.insert_one(data)
-        created_reservation = await request.app.mongodb.Reservations.find_one(
-            {"_id": new_reservation.inserted_id}
+        created_reservation = await get_reservation_by_id(
+            request=request, id=new_reservation.inserted_id
         )
         return created_reservation
     raise HTTPException(
@@ -178,10 +178,7 @@ async def create_reservation(
 async def update_owner_reservation(
     request: Request, reservation: Reservation
 ) -> Reservation:
-    reservation = await request.app.mongodb.Reservations.find_one(
-        {"_id": reservation.id}
-    )
-    db_reservation = Reservation(**reservation)
+    db_reservation = await get_reservation_by_id(request, reservation.id)
     if db_reservation:
         db_reservation.date_start = (
             reservation.date_start
@@ -204,7 +201,25 @@ async def update_owner_reservation(
                 }
             },
         )
-        updated_reservation = await request.app.mongodb.Reservations.find_one(
-            {"_id": reservation.id}
-        )
+        updated_reservation = await get_reservation_by_id(request, reservation.id)
         return updated_reservation
+
+
+async def delete_reservation_by_property_slug(request: Request, slug: str) -> Any:
+    property = await get_property_by_slug(request, slug)
+    if not property:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Something went wrong / Bad request",
+        )
+    await request.app.mongodb.Reservations.delete_many({"property_id": property.id})
+
+
+async def delete_reservation(request: Request, id: str) -> Any:
+    reservation = await get_reservation_by_id(request, id)
+    if reservation:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Something went wrong / Bad request",
+        )
+    await request.app.mongodb.Reservations.delete_one({"_id": id})

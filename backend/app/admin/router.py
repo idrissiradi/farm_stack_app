@@ -21,11 +21,13 @@ from app.core.services import create_aliased_response
 from app.admin.services import (
     create_property,
     create_reservation,
+    delete_reservation,
     check_property_owner,
     check_user_permission,
     delete_property_by_slug,
     update_property_by_slug,
     update_owner_reservation,
+    delete_reservation_by_property_slug,
 )
 from app.admin.selectors import (
     get_properties,
@@ -179,7 +181,15 @@ async def delete_property(
     """Update Property"""
     await check_user_permission(request, user, slug)
     await check_property_owner(request, slug, user.email)
-    await delete_property_by_slug(request, slug, user.email)
+    await delete_reservation_by_property_slug(
+        request,
+        slug,
+    )
+    await delete_property_by_slug(
+        request,
+        slug,
+        user.email,
+    )
     return {"message": "success"}
 
 
@@ -246,3 +256,23 @@ async def update_reservation(
     raise HTTPException(
         status_code=HTTPStatus.BAD_REQUEST, detail="Something went wrong / Bad request"
     )
+
+
+@router.delete(
+    "/{slug}/reservations",
+    status_code=HTTPStatus.NO_CONTENT,
+)
+async def delete_reservation_by_id(
+    request: Request,
+    slug: str = Path(..., min_length=1),
+    id: str = Body(..., embed=True),
+    user: Optional[UserModel] = Depends(get_current_user_authorizer()),
+) -> Any:
+    """Update Property"""
+    await check_user_permission(request, user, slug)
+    await check_property_owner(request, slug, user.email)
+    await delete_reservation(
+        request,
+        id,
+    )
+    return {"message": "success"}
