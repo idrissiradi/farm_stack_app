@@ -4,18 +4,18 @@ import datetime
 from http import HTTPStatus
 from typing import Any, Optional
 
-from fastapi import Request, Response, HTTPException, BackgroundTasks
+from fastapi import Response, HTTPException, BackgroundTasks
+from odmantic import ObjectId, AIOEngine
 from pydantic import EmailStr
-from fastapi.encoders import jsonable_encoder
 
 from app.auth.utils import send_email, verify_password
 from app.auth.models import (
-    UserInDB,
+    User,
+    UserBase,
     ResetInDB,
-    UserModel,
+    UserInUpdate,
     VerifyInDB,
     UserInCreate,
-    UserInUpdate,
     UserTokenInDB,
 )
 from app.core.config import settings
@@ -24,27 +24,25 @@ from app.core.security import (
     create_refresh_token,
     decode_refresh_token,
 )
-from app.auth.selectors import get_user, get_user_by_email
+from app.auth.selectors import get_user_by_email
 
 
-async def create_user(request: Request, user: UserInCreate) -> Optional[UserModel]:
+async def create_user(engine: AIOEngine, user: UserInCreate) -> Optional[UserBase]:
     """Create new user"""
     user.change_password(user.password)
     username = user.email.split("@")[0]
-    db_user = UserInDB(**user.dict(), username=username)
-    data = jsonable_encoder(db_user)
-    new_user = await request.app.mongodb.Users.insert_one(data)
-    created_user = await request.app.mongodb.Users.find_one(
-        {"_id": new_user.inserted_id}, {"password": 0, "_id": 0}
-    )
-    return UserModel(**created_user)
+    db_user = User(**user.dict(), username=username)
+    await engine.configure_database([User])
+    await engine.save(db_user)
+    created_user = await get_user_by_email(engine, user.email)
+    return created_user
 
 
 async def send_verify_email(
-    email: EmailStr, request: Request, background_tasks: BackgroundTasks
+    email: EmailStr, engine: AIOEngine, task: BackgroundTasks
 ) -> Any:
     """Send verification email"""
-    user = await get_user_by_email(request, email)
+    user = await get_user_by_email(engine, email)
     full_name = user.first_name + " " + user.last_name
     email: EmailStr = user.email
     token = "".join(
@@ -52,8 +50,7 @@ async def send_verify_email(
     )
 
     db_verify = VerifyInDB(email=email, token=token)
-    data = jsonable_encoder(db_verify)
-    await request.app.mongodb.UserVerify.insert_one(data)
+    await engine.save(db_verify)
 
     absurl = settings.SERVER_HOST + "api/auth/verify" + "?token=" + str(token)
     redirect_url = settings.FRONTEND_URL
@@ -87,14 +84,15 @@ async def send_verify_email(
         "from": email_from,
         "smtp": smtp_options,
     }
-    return background_tasks.add_task(send_email, data)
+    print("sending mail...")
+    return task.add_task(send_email, data)
 
 
 async def authenticate(
-    request: Request, email: EmailStr, password: str
-) -> Optional[UserInDB]:
+    engine: AIOEngine, email: EmailStr, password: str
+) -> Optional[User]:
     """Check authenticated user"""
-    user = await get_user(request, email)
+    user = await get_user_by_email(engine, email)
     if not user:
         return None
     if not verify_password(password, user.password):
@@ -102,22 +100,19 @@ async def authenticate(
     return user
 
 
-async def generate_token(id: int, request: Request, response: Response) -> str:
+async def generate_token(engine: AIOEngine, id: ObjectId, response: Response) -> str:
     """Generate Refresh/Access token"""
-
-    access_token = create_access_token(id)
-    refresh_token = create_refresh_token(id)
-
+    access_token = create_access_token(id.__str__())
+    refresh_token = create_refresh_token(id.__str__())
     user_token = UserTokenInDB(
-        user_id=id,
+        user_id=id.__str__(),
         token=refresh_token,
         expired_at=datetime.datetime.utcnow()
         + datetime.timedelta(seconds=settings.REFRESH_TOKEN_EXPIRE_SECONDS),
     )
-
-    data = jsonable_encoder(user_token)
-    await request.app.mongodb.UserToken.delete_many({"user_id": id})
-    await request.app.mongodb.UserToken.insert_one(data)
+    async with engine.session() as session:
+        await session.remove(UserTokenInDB, UserTokenInDB.user_id == id.__str__())
+        await session.save(user_token)
 
     response.set_cookie(
         "access_token",
@@ -128,7 +123,6 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
         max_age=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
         expires=settings.ACCESS_TOKEN_EXPIRE_SECONDS,
     )
-
     response.set_cookie(
         "refresh_token",
         refresh_token,
@@ -144,12 +138,12 @@ async def generate_token(id: int, request: Request, response: Response) -> str:
     return token
 
 
-async def generate_access_token(request: Request, response: Response) -> str:
-    """Generate Access token"""
-
-    refresh_token = request.cookies.get("refresh_token")
+async def generate_access_token(
+    engine: AIOEngine, refresh_token: str, response: Response
+) -> str:
+    """Generate New Access token"""
     user_id = decode_refresh_token(refresh_token)
-    user_token = await request.app.mongodb.UserToken.find_one({"user_id": user_id})
+    user_token = await engine.find_one(UserTokenInDB, UserTokenInDB.user_id == user_id)
     if not user_token:
         raise HTTPException(HTTPStatus.FORBIDDEN, "unauthenticated")
 
@@ -170,19 +164,19 @@ async def generate_access_token(request: Request, response: Response) -> str:
 
 
 async def send_reset_password(
-    email: str, background_tasks: BackgroundTasks, request: Request
+    engine: AIOEngine, email: str, background_tasks: BackgroundTasks
 ):
     """Send reset password email"""
 
-    user = await get_user_by_email(request, email)
+    user = await get_user_by_email(engine, email)
     full_name = user.first_name + " " + user.last_name
     token = "".join(
         random.choice(string.ascii_lowercase + string.digits) for _ in range(10)
     )
     reset = ResetInDB(email=user.email, token=token)
-    data = jsonable_encoder(reset)
-    await request.app.mongodb.UserReset.delete_one({"email": user.email})
-    await request.app.mongodb.UserReset.insert_one(data)
+    async with engine.session() as session:
+        await session.remove(ResetInDB, ResetInDB.email == user.email)
+        await session.save(reset)
 
     url = settings.FRONTEND_URL + "/reset" + "?token=" + str(token)
     email_body = (
@@ -215,20 +209,11 @@ async def send_reset_password(
 
 
 async def update_user_profile(
-    request: Request, data: UserInUpdate, user: UserModel
-) -> UserModel:
+    engine: AIOEngine, data: UserInUpdate, user: UserBase
+) -> UserBase:
     user.first_name = data.first_name if data.first_name else user.first_name
     user.last_name = data.last_name if data.last_name else user.last_name
     user.role = data.role if data.role else user.role
-    await request.app.mongodb.Users.update_one(
-        {"email": user.email},
-        {
-            "$set": {
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "role": user.role,
-            }
-        },
-    )
-    updated_user = await get_user_by_email(request, user.email)
+    await engine.save(user)
+    updated_user = await get_user_by_email(engine, user.email)
     return updated_user

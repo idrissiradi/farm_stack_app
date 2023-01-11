@@ -2,38 +2,53 @@ import enum
 from typing import Optional
 from datetime import datetime
 
+from odmantic import Field, Model, EmbeddedModel, ObjectId
 from pydantic import EmailStr, BaseModel, validator
 
 from app.auth.utils import password_match, verify_password, get_password_hash
-from app.core.model import BaseClass
+from app.core.model import BaseModelClass
 
 
 class UserRole(str, enum.Enum):
-    role_owner = "owner"
+    role_buyer = "buyer"
+    role_seller = "seller"
     role_staff = "staff"
-    role_client = "client"
+    role_agent = "agent"
 
 
-class AuthProvider(enum.Enum):
+class AuthProvider(str, enum.Enum):
     auth_email = "email"
     auth_google = "google"
 
 
-class UserBase(BaseClass):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    email: EmailStr = None
-    username: Optional[str] = None
-    is_verified: Optional[bool] = False
-    is_active: Optional[bool] = True
-    is_superuser: Optional[bool] = False
-    role: UserRole = UserRole.role_client
+class User(Model, BaseModelClass):
+    first_name: str
+    last_name: str
+    email: EmailStr = Field(unique=True)
+    username: str = Field(unique=True)
+    is_verified: bool = False
+    is_active: bool = True
+    is_superuser: bool = False
+    role: UserRole = UserRole.role_buyer
     auth_provider: AuthProvider = AuthProvider.auth_email
-
-
-class UserInDB(UserBase):
-    email: EmailStr
+    avatar: str = ""
     password: str
+
+    class Config:
+        collection = "users"
+
+
+class UserBase(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    username: str
+    is_verified: bool = False
+    is_active: bool = True
+    is_superuser: bool = False
+    role: UserRole = UserRole.role_buyer
+    auth_provider: AuthProvider = AuthProvider.auth_email
+    avatar: str = ""
 
 
 class UserInLogin(BaseModel):
@@ -57,22 +72,11 @@ class UserInCreate(UserInLogin):
         self.password = get_password_hash(password)
 
 
-class UserModel(BaseModel):
-    first_name: str
-    last_name: str
-    email: EmailStr
-    username: str
-    is_verified: bool
-    is_active: bool
-    is_superuser: bool
-    role: UserRole
-
-
 class UserInResponse(BaseModel):
-    user: UserModel
+    user: UserBase
 
 
-class User(UserInResponse):
+class UserInLoginResponse(UserInResponse):
     token: str
 
 
@@ -82,15 +86,21 @@ class UserInUpdate(BaseModel):
     role: Optional[UserRole] = None
 
 
-class UserTokenInDB(BaseClass):
-    user_id: str
-    token: str
-    expired_at: Optional[datetime]
+class UserTokenInDB(Model):
+    user_id: str = Field(unique=True)
+    token: str = Field(unique=True)
+    expired_at: datetime
+
+    class Config:
+        collection = "user_token"
 
 
-class ResetInDB(BaseClass):
-    email: EmailStr
-    token: str
+class ResetInDB(Model):
+    email: EmailStr = Field(unique=True)
+    token: str = Field(unique=True)
+
+    class Config:
+        collection = "reset_password"
 
 
 class ResetSchema(BaseModel):
@@ -99,6 +109,9 @@ class ResetSchema(BaseModel):
     token: str
 
 
-class VerifyInDB(BaseClass):
-    email: EmailStr
-    token: str
+class VerifyInDB(Model):
+    email: EmailStr = Field(unique=True)
+    token: str = Field(unique=True)
+
+    class Config:
+        collection = "user_verify"

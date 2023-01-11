@@ -14,6 +14,7 @@ motor = "*"
 emails = "*"
 pyjwt = "*"
 passlib = {extras = ["bcrypt"], version = "*"}
+odmantic = "*"
 
 [dev-packages]
 black = "*"
@@ -24,3 +25,6 @@ flake8 = "*"
 
 [requires]
 python_version = "3.11"
+
+[pipenv]
+allow_prereleases = true

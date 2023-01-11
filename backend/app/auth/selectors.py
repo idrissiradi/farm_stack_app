@@ -1,61 +1,39 @@
 from typing import Optional
 
-from fastapi import Request
+from odmantic import AIOEngine, ObjectId
 from pydantic import EmailStr
 
-from app.auth.models import (
-    UserBase,
-    UserInDB,
-    ResetInDB,
-    UserModel,
-    VerifyInDB,
-    UserTokenInDB,
-)
+from app.auth.models import User, UserBase, ResetInDB, VerifyInDB, UserTokenInDB
 
 
-async def get_user(request: Request, email: EmailStr) -> Optional[UserInDB]:
-    """Get user"""
-    user = await request.app.mongodb.Users.find_one({"email": email})
-    if user:
-        return UserInDB(**user)
-    return None
-
-
-async def get_user_by_email(request: Request, email: EmailStr) -> Optional[UserModel]:
+async def get_user_by_email(engine: AIOEngine, email: EmailStr) -> Optional[User]:
     """Get user by email"""
-    user = await request.app.mongodb.Users.find_one({"email": email}, {"password": 0})
+    user = await engine.find_one(User, User.email == email)
     if user:
-        return UserModel(**user)
+        return user
     return None
 
 
-async def get_user_by_id(request: Request, id: str) -> Optional[UserBase]:
+async def get_user_by_id(engine: AIOEngine, id: str) -> Optional[User]:
     """Get user by id"""
-    user = await request.app.mongodb.Users.find_one({"_id": id}, {"password": 0})
+    user_id = ObjectId(id)
+    user = await engine.find_one(User, User.id == user_id)
     if user:
-        return UserBase(**user)
+        return user
     return None
 
 
-async def get_verify_email(request: Request, token: str) -> Optional[VerifyInDB]:
+async def get_verify_email(engine: AIOEngine, token: str) -> Optional[VerifyInDB]:
     """Get verify email by token"""
-    verify = await request.app.mongodb.UserVerify.find_one({"token": token})
+    verify = await engine.find_one(VerifyInDB, VerifyInDB.token == token)
     if verify:
-        return VerifyInDB(**verify)
+        return verify
     return None
 
 
-async def get_user_token(request: Request, token: str) -> Optional[UserTokenInDB]:
-    """Get user token"""
-    token = await request.app.mongodb.UserToken.find_one({"token": token})
-    if token:
-        return UserTokenInDB(**token)
-    return None
-
-
-async def get_user_reset(request: Request, token: str) -> Optional[ResetInDB]:
-    """Get user reset"""
-    user_reset = await request.app.mongodb.UserReset.find_one({"token": token})
+async def get_user_reset(engine: AIOEngine, token: str) -> Optional[ResetInDB]:
+    """Get user (reset password) by token"""
+    user_reset = await engine.find_one(ResetInDB, ResetInDB.token == token)
     if user_reset:
-        return ResetInDB(**user_reset)
+        return user_reset
     return None

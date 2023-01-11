@@ -5,9 +5,11 @@ from typing import Optional
 import jwt
 from jwt import PyJWTError
 from fastapi import Depends, Request, HTTPException
+from odmantic import AIOEngine
 
-from app.auth.models import UserModel
+from app.auth.models import UserBase
 from app.core.config import settings
+from app.core.services import get_db
 from app.auth.selectors import get_user_by_id
 
 
@@ -21,11 +23,11 @@ def _get_authorization_token(request: Request) -> str:
 
 
 async def _get_current_user(
-    request: Request, token: str = Depends(_get_authorization_token)
-) -> UserModel:
+    token: str = Depends(_get_authorization_token),
+    engine: AIOEngine = Depends(get_db),
+) -> UserBase:
     user_id = decode_access_token(token)
-    user = await get_user_by_id(request, user_id)
-
+    user = await get_user_by_id(engine, user_id)
     if not user:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found")
     return user
@@ -39,22 +41,22 @@ def _get_authorization_token_optional(request: Request):
 
 
 async def _get_current_user_optional(
-    request: Request,
+    engine: AIOEngine = Depends(get_db),
     token: str = Depends(_get_authorization_token_optional),
-) -> Optional[UserModel]:
+) -> Optional[UserBase]:
     if token:
-        return await _get_current_user(request, token)
+        return await _get_current_user(engine, token)
     return None
 
 
-def get_current_user_authorizer(*, required: bool = True) -> Optional[UserModel]:
+def get_current_user_authorizer(*, required: bool = True) -> Optional[UserBase]:
     if required:
         return _get_current_user
     else:
         return _get_current_user_optional
 
 
-def create_access_token(id: int) -> str:
+def create_access_token(id: str) -> str:
     return jwt.encode(
         {
             "user_id": id,
@@ -80,7 +82,7 @@ def decode_access_token(token: str):
         )
 
 
-def create_refresh_token(id):
+def create_refresh_token(id: str):
     return jwt.encode(
         {
             "user_id": id,
@@ -93,7 +95,7 @@ def create_refresh_token(id):
     )
 
 
-def decode_refresh_token(token):
+def decode_refresh_token(token: str):
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=settings.JWT_ALGORITHM
