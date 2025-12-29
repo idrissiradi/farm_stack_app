@@ -1,0 +1,28 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "databases",
+  "pydantic[email]",
+  "fastapi",
+  "uvicorn[standard]",
+  "python-slugify",
+  "python-dotenv",
+  "motor",
+  "emails",
+  "PyJWT",
+  "passlib[bcrypt]",
+  "odmantic",
+]
+
+[project.optional-dependencies]
+dev = [
+  "black",
+  "isort",
+  "mypy",
+  "autoflake",
+  "flake8",
+]
